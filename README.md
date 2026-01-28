@@ -8,6 +8,7 @@ project by any means in this initial state._
 - := operator
 - Better generics (C# inspired; includes single function parametrization for 2+ types)
 - Non-finalized or dynamic lambdas
+- Provide built-in solutions for not implemented Java features (https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Java)
 - Inherited libraries (built-in or 'no import' libraries are defined using metadata)
 - Powerful annotation (dynamically derived values in interfaces for example)
 - A custom 'plug-and-code' Java compiler (via a built-in Maven)
