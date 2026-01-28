@@ -79,7 +79,7 @@ expression
     |   '(' type ')' expression                                 # CastExpr
     |   expression '**' expression                              # ExpExpr
     |   operator=('++' | '--' | '+' | '-' | '~') expression     # UnaryExpr
-    |   ('!' expression | ('not(' | 'not (') expression ')')    # NotExpr
+    |   ('!' expression | 'not' '(' expression ')')             # NotExpr
     |   expression operator=('*' | '/' | '%') expression        # MulDivExpr
     |   expression operator=('+' | '-') expression              # AddSubExpr
     |   expression operator=('<<' | '>>' | '>>>') expression    # ShiftExpr
