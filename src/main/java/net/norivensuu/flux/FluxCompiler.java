@@ -22,10 +22,10 @@ public class FluxCompiler {
 
     private static final Path PROJECT_ROOT = Paths.get("net/norivensuu/testflux");
 
-    public static void main(String[] args) throws IOException {
+    static void main(String[] args) throws IOException {
         System.out.println("Starting compilation of project: src/main/flux/" + PROJECT_ROOT);
 
-        generateMavenPomFile();
+//        generateMavenPomFile();
 
         try (Stream<Path> paths = Files.walk(Paths.get("src/main/flux/", PROJECT_ROOT.toString()))) {
             paths.filter(Files::isRegularFile)

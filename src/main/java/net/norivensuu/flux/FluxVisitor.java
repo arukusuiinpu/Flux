@@ -1,4 +1,4 @@
-// Generated from C:/Users/student/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
+// Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
 package net.norivensuu.flux;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -28,6 +28,12 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitType(FluxParser.TypeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FluxParser#terminator}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTerminator(FluxParser.TerminatorContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#accessModifier}.
 	 * @param ctx the parse tree
@@ -153,6 +159,13 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitReturnStatement(FluxParser.ReturnStatementContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code FunctionDeclStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code AssignmentStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
@@ -180,26 +193,12 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitBoolExpr(FluxParser.BoolExprContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code BitwiseORExpr}
+	 * Visit a parse tree produced by the {@code StringExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBitwiseORExpr(FluxParser.BitwiseORExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code IdExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitIdExpr(FluxParser.IdExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code ArrayAccessExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitArrayAccessExpr(FluxParser.ArrayAccessExprContext ctx);
+	T visitStringExpr(FluxParser.StringExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code BitwiseANDExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -229,40 +228,12 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLogicalORExpr(FluxParser.LogicalORExprContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code UnaryExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitUnaryExpr(FluxParser.UnaryExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code DecimalExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitDecimalExpr(FluxParser.DecimalExprContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code PostfixExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitPostfixExpr(FluxParser.PostfixExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code FunctionCallExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFunctionCallExpr(FluxParser.FunctionCallExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code MulDivExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitMulDivExpr(FluxParser.MulDivExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code EqualityExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -271,26 +242,12 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEqualityExpr(FluxParser.EqualityExprContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code LogicalANDExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLogicalANDExpr(FluxParser.LogicalANDExprContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code CastExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitCastExpr(FluxParser.CastExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code ParenthesizedExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitParenthesizedExpr(FluxParser.ParenthesizedExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code BitwiseXORExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -306,26 +263,12 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitNotExpr(FluxParser.NotExprContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code IntExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitIntExpr(FluxParser.IntExprContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code SqParenthesizedExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSqParenthesizedExpr(FluxParser.SqParenthesizedExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code AddSubExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitAddSubExpr(FluxParser.AddSubExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ShiftExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -340,6 +283,83 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTernaryExpr(FluxParser.TernaryExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code BitwiseORExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBitwiseORExpr(FluxParser.BitwiseORExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code IdExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIdExpr(FluxParser.IdExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ArrayAccessExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArrayAccessExpr(FluxParser.ArrayAccessExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code UnaryExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitUnaryExpr(FluxParser.UnaryExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code DecimalExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDecimalExpr(FluxParser.DecimalExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code FunctionCallExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionCallExpr(FluxParser.FunctionCallExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code MulDivExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMulDivExpr(FluxParser.MulDivExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code LogicalANDExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLogicalANDExpr(FluxParser.LogicalANDExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ParenthesizedExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParenthesizedExpr(FluxParser.ParenthesizedExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code IntExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIntExpr(FluxParser.IntExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code AddSubExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAddSubExpr(FluxParser.AddSubExprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#expressionList}.
 	 * @param ctx the parse tree

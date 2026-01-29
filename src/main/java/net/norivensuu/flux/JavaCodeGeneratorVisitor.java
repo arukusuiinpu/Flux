@@ -1,25 +1,58 @@
 package net.norivensuu.flux;
 
+import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static net.norivensuu.flux.FluxParser.*;
 
 public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
+    public final List<String> pendingAssertions = new ArrayList<>();
+
+    public static class JavaCode {
+        public StringBuilder builder;
+        public int indentLevel;
+
+        public JavaCode() {
+            builder = new StringBuilder();
+        }
+
+        public JavaCode append(String line) {
+            builder.append(line);
+            return this;
+        }
+
+        public JavaCode addLine(String line) {
+            return append("\t".repeat(indentLevel))
+                    .append(line)
+                    .append("\n");
+        }
+
+        @Override
+        public String toString() {
+            return builder.toString();
+        }
+    }
+
+    JavaCode javaCode;
+
     @Override
     public String visitProgram(FluxParser.ProgramContext ctx) {
-        StringBuilder javaCode = new StringBuilder();
+        javaCode = new JavaCode();
 
         for (FluxParser.DeclarationContext declarationCtx : ctx.declaration()) {
             if (declarationCtx.varDecl() != null) {
                 FluxParser.VarDeclContext varDeclCtx = declarationCtx.varDecl();
 
-                javaCode.append(visit(varDeclCtx)).append("\n");
+                javaCode.addLine(visit(varDeclCtx));
             } else if (declarationCtx.functionDecl() != null) {
                 String functionCode = visit(declarationCtx.functionDecl());
-                javaCode.append(functionCode.replace("\n", "\n    ").trim()).append("\n");
+                javaCode.addLine(functionCode.replace("\n", "\n    ").trim());
             }
         }
 
@@ -59,14 +92,35 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitRelationalExpr(FluxParser.RelationalExprContext ctx) {
         var parent = ctx.getParent();
-        String text = String.format("%s %s %s", visit(ctx.expression(0)), ctx.operator.getText(), visit(ctx.expression(1)));
-        if (parent != null) {
-            if (parent instanceof FluxParser.RelationalExprContext) {
-                return String.format("%s && %s", text, visit(ctx.expression(1)));
-            }
+        String leftExpr = visit(ctx.expression(0));
+        String rightExpression = visit(ctx.expression(1));
+        String operator = ctx.operator.getText();
 
+        if (parent instanceof FluxParser.RelationalExprContext) {
+            if (ctx.expression(1) instanceof FluxParser.FunctionCallExprContext idExpr) {
+                var declaration = getDeclaration(idExpr.ID().getText(), ctx);
+
+                if (declaration != null) {
+                    String varName = "_" + declaration.id + "$" + ctx.hashCode();
+                    String typePrefix = (getDeclaration(varName, ctx) == null) ? declaration.type + " " : "";
+
+                    pendingAssertions.add(String.format("%s%s = %s;", typePrefix, varName, rightExpression));
+
+                    return String.format("%s %s %s && %s", leftExpr, operator, varName, varName);
+                }
+            }
+            return String.format("%s %s %s && %s", leftExpr, operator, rightExpression, rightExpression);
         }
-        return text;
+
+        return String.format("%s %s %s", leftExpr, operator, rightExpression);
+    }
+
+    @SafeVarargs
+    public final <T> T firstNonNull(T... objects) {
+        return Stream.of(objects)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -91,7 +145,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitCastExpr(FluxParser.CastExprContext ctx) {
-        return String.format("(%s)%s", ctx.type().getText(), visit(ctx.expression()));
+        return String.format("(%s)%s", convertType(ctx.type().getText()), visit(ctx.expression()));
     }
 
     @Override
@@ -106,30 +160,116 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitDecimalExpr(FluxParser.DecimalExprContext ctx) {
+        String type = null;
+        String text = ctx.DECIMAL().getText();
+
         var varDecl = getToClosestParent(ctx, FluxParser.VarDeclContext.class);
         if (varDecl != null) {
-            String type = varDecl.type().getText();
-            String text = ctx.DECIMAL().getText();
-
-            if (type.equals("float"))
-                return text.endsWith("f") || text.endsWith("F") ? text : text + "f";
+            type = convertType(varDecl.type().getText());
         }
         var assignmentStat = getToClosestParent(ctx, FluxParser.AssignmentStatContext.class);
-        var siblings = getToSiblingsOfType(ctx, FluxParser.DeclarationContext.class);
-        if (assignmentStat != null && !siblings.isEmpty()) {
-            for (var sibling : siblings) {
-                if (sibling.varDecl() != null) {
-                    var globalVarDecl = sibling.varDecl();
-
-                    String type = globalVarDecl.type().getText();
-                    String text = ctx.DECIMAL().getText();
-
-                    if (type.equals("float"))
-                        return text.endsWith("f") || text.endsWith("F") ? text : text + "f";
+        if (assignmentStat != null) {
+            var declaration = getDeclaration(assignmentStat.ID().getText(), ctx);
+            if (declaration != null) {
+                type = convertType(declaration.type);
+            }
+        }
+        var functionCallStat = getToClosestParent(ctx, FluxParser.FunctionCallExprContext.class);
+        if (functionCallStat != null) {
+            var functionDeclStat = firstNonNull(
+                    Objects.requireNonNull(getToClosestSibling(ctx, FunctionDeclStatementContext.class)).functionDecl(),
+                    getToClosestSibling(ctx, FluxParser.FunctionDeclContext.class)
+            );
+            if (functionDeclStat != null) {
+                int i = 0;
+                int j = whatParameterAmI(ctx, functionCallStat.expressionList());
+                Print(j);
+                for (var parameter : functionDeclStat.formalParameters().formalParameter()) {
+                    if (i == j) {
+                        var declaration = getDeclaration(parameter.ID().getText(), ctx);
+                        if (declaration != null) {
+                            type = convertType(declaration.type);
+                        }
+                    }
+                    i += 1;
                 }
             }
         }
+
+        if (type != null) {
+            if (type.equals("float"))
+                return text.endsWith("f") || text.endsWith("F") ? text : text + "f";
+        }
         return ctx.DECIMAL().getText();
+    }
+
+    public int whatParameterAmI(ParseTree ctx,  FluxParser.ExpressionListContext parent) {
+        for (int i = 0; i < parent.expression().size(); i++) {
+            if (parent.expression(i).equals(ctx)) return i;
+        }
+        return -1;
+    }
+
+    public int whatChildAmI(ParseTree ctx) {
+        return whatChildAmI(ctx, ctx.getParent());
+    }
+
+    public int whatChildAmI(ParseTree ctx, ParseTree parent) {
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            if (parent.getChild(i).equals(ctx)) return i;
+        }
+        return -1;
+    }
+
+    public static class Declaration {
+        public String type;
+        public String id;
+
+        public String declarationType = "var";
+
+        public Declaration(String type, String id) {
+            this.type = type;
+            this.id = id;
+        }
+
+        public Declaration(String type, String id, String declarationType) {
+            this.type = type;
+            this.id = id;
+
+            this.declarationType = declarationType;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("[%s %s%s]", type, id, declarationType.equals("function") ? "()" : "");
+        }
+    }
+
+    public Declaration getDeclaration(String id, ParseTree ctx) {
+        var siblings = getToSiblingsOfType(ctx, FluxParser.DeclarationContext.class);
+        if (!siblings.isEmpty()) {
+            for (var sibling : siblings) {
+                if (sibling.varDecl() != null) {
+                    var globalDecl = sibling.varDecl();
+
+                    if (id.equals(globalDecl.ID().getText())) {
+                        String type = convertType(globalDecl.type().getText());
+
+                        return new Declaration(type, id, "var");
+                    }
+                }
+                else if (sibling.functionDecl() != null) {
+                    var globalDecl = sibling.functionDecl();
+
+                    if (id.equals(globalDecl.ID().getText())) {
+                        String type = convertType(globalDecl.type().getText());
+
+                        return new Declaration(type, id, "function");
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -164,18 +304,14 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitBlock(FluxParser.BlockContext ctx) {
-        StringBuilder blockCode = new StringBuilder("{\n");
+        StringBuilder blockCode = new StringBuilder("{");
+        javaCode.indentLevel++;
         for (FluxParser.StatementContext statementCtx : ctx.statement()) {
-            blockCode.append(visit(statementCtx)).append("\r");
+            blockCode.append("\r").append("\t".repeat(javaCode.indentLevel)).append(visit(statementCtx));
         }
-        blockCode.append("}");
+        javaCode.indentLevel--;
+        blockCode.append("\r").append("\t".repeat(javaCode.indentLevel)).append("}");
         return blockCode.toString();
-    }
-
-    @Override
-    public String visitBlockStatement(FluxParser.BlockStatementContext ctx) {
-        // TODO Implement
-        return super.visitBlockStatement(ctx);
     }
 
     @Override
@@ -193,7 +329,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitFunctionDecl(FluxParser.FunctionDeclContext ctx) {
-        String returnType = ctx.type().getText();
+        String returnType = convertType(ctx.type().getText());
         String functionName = ctx.ID().getText();
 
         String parameters = "";
@@ -207,7 +343,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         String functionModifiers = parseFunctionModifiers(ctx.functionModifiers());
 
-        return String.format("%s%s %s(%s) %s\n", functionModifiers, returnType, functionName, parameters, body);
+        return String.format("%s%s %s(%s) %s", functionModifiers, returnType, functionName, parameters, body);
     }
 
     public String parseFunctionModifiers(FluxParser.FunctionModifiersContext ctx) {
@@ -242,6 +378,16 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitFunctionCallExpr(FluxParser.FunctionCallExprContext ctx) {
+        String localClassString = "";
+
+        var sibling = getToClosestSibling(ctx, FluxParser.FunctionDeclStatementContext.class);
+        if (sibling != null) {
+            var functionDecl = sibling.functionDecl();
+            if (functionDecl.ID().getText().equals(ctx.ID().getText())) {
+                localClassString = String.format("_Class_%s$%s.", functionDecl.ID().getText(), functionDecl.hashCode());
+            }
+        }
+
         String functionName = ctx.ID().getText();
         String args = "";
         if (ctx.expressionList() != null) {
@@ -249,11 +395,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                     .map(this::visit)
                     .collect(Collectors.joining(", "));
         }
-        return functionName + "(" + args + ")";
+        return localClassString + functionName + "(" + args + ")";
     }
 
     public String visitFormalParameter(FluxParser.FormalParameterContext ctx) {
-        return ctx.type().getText() + " " + ctx.ID().getText();
+        return convertType(ctx.type().getText()) + " " + ctx.ID().getText();
     }
 
     @Override
@@ -263,6 +409,15 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         } else {
             return "return;";
         }
+    }
+
+    @Override
+    public String visitFunctionDeclStatement(FunctionDeclStatementContext ctx) {
+        var functionDecl = ctx.functionDecl();
+        javaCode.indentLevel++;
+        String text = String.format("class _Class_%s$%s {%s\n}", functionDecl.ID().getText(), functionDecl.hashCode(), "\r" + "\t".repeat(javaCode.indentLevel) + "static " + visit(ctx.functionDecl()));
+        javaCode.indentLevel--;
+        return text;
     }
 
     @Override
@@ -284,14 +439,26 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         String id = ctx.ID().getText();
 
         String variableModifiers = parseVariableModifiers(ctx.variableModifiers());
+        StringBuilder statementBuilder = new StringBuilder();
 
         if (ctx.expression() != null) {
             String expressionValue = visit(ctx.expression());
-            return String.format("%s%s %s = %s;", variableModifiers, type, id, expressionValue);
+            for (String assertion : pendingAssertions) {
+                statementBuilder.append(assertion).append("\n");
+            }
+            pendingAssertions.clear();
+
+            statementBuilder.append(String.format("%s%s %s = %s;", variableModifiers, type, id, expressionValue));
 
         }  else {
-            return String.format("%s%s %s;", variableModifiers, type, id);
+            for (String assertion : pendingAssertions) {
+                statementBuilder.append(assertion).append("\n");
+            }
+            pendingAssertions.clear();
+
+            statementBuilder.append(String.format("%s%s %s;", variableModifiers, type, id));
         }
+        return statementBuilder.toString();
     }
 
     public static <T extends ParseTree> T getToClosestParent(ParseTree ctx, Class<T> targetType) {
@@ -299,6 +466,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         if (parent != null) {
             if (targetType.isInstance(parent)) {
+
                 return targetType.cast(parent);
             } else {
                 return getToClosestParent(parent, targetType);
@@ -368,13 +536,23 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return builder.toString();
     }
 
-    public String convertType(String type) {
+    public static String convertType(String type) {
         if (type.equals("bool"))
             return "boolean";
+        else if (type.equals("string"))
+            return "String";
         return type;
     }
 
-    public <T> void Print(T out) {
-        System.out.println(out);
+    @SafeVarargs
+    public static <T> void Print(T... out) {
+        StringBuilder builder = new StringBuilder();
+        for (var o : out) {
+            if (o instanceof ParseTree parseTree) {
+                builder.append(parseTree.getText()).append(" ");
+            }
+            else builder.append(o).append(" ");
+        }
+        System.out.println(builder);
     }
 }

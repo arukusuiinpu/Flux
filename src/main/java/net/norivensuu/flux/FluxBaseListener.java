@@ -1,4 +1,4 @@
-// Generated from C:/Users/student/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
+// Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
 package net.norivensuu.flux;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -48,6 +48,18 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitType(FluxParser.TypeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTerminator(FluxParser.TerminatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTerminator(FluxParser.TerminatorContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -293,6 +305,18 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterAssignmentStatement(FluxParser.AssignmentStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -341,37 +365,13 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBitwiseORExpr(FluxParser.BitwiseORExprContext ctx) { }
+	@Override public void enterStringExpr(FluxParser.StringExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBitwiseORExpr(FluxParser.BitwiseORExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterIdExpr(FluxParser.IdExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitIdExpr(FluxParser.IdExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterArrayAccessExpr(FluxParser.ArrayAccessExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitArrayAccessExpr(FluxParser.ArrayAccessExprContext ctx) { }
+	@Override public void exitStringExpr(FluxParser.StringExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -425,30 +425,6 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterUnaryExpr(FluxParser.UnaryExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitUnaryExpr(FluxParser.UnaryExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterDecimalExpr(FluxParser.DecimalExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitDecimalExpr(FluxParser.DecimalExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterPostfixExpr(FluxParser.PostfixExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -456,30 +432,6 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitPostfixExpr(FluxParser.PostfixExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFunctionCallExpr(FluxParser.FunctionCallExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFunctionCallExpr(FluxParser.FunctionCallExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterMulDivExpr(FluxParser.MulDivExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitMulDivExpr(FluxParser.MulDivExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -497,18 +449,6 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLogicalANDExpr(FluxParser.LogicalANDExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitLogicalANDExpr(FluxParser.LogicalANDExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterCastExpr(FluxParser.CastExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -516,18 +456,6 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitCastExpr(FluxParser.CastExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterParenthesizedExpr(FluxParser.ParenthesizedExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitParenthesizedExpr(FluxParser.ParenthesizedExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -557,18 +485,6 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterIntExpr(FluxParser.IntExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitIntExpr(FluxParser.IntExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterSqParenthesizedExpr(FluxParser.SqParenthesizedExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -576,18 +492,6 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitSqParenthesizedExpr(FluxParser.SqParenthesizedExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterAddSubExpr(FluxParser.AddSubExprContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitAddSubExpr(FluxParser.AddSubExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -612,6 +516,138 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTernaryExpr(FluxParser.TernaryExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBitwiseORExpr(FluxParser.BitwiseORExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBitwiseORExpr(FluxParser.BitwiseORExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterIdExpr(FluxParser.IdExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIdExpr(FluxParser.IdExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterArrayAccessExpr(FluxParser.ArrayAccessExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitArrayAccessExpr(FluxParser.ArrayAccessExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterUnaryExpr(FluxParser.UnaryExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitUnaryExpr(FluxParser.UnaryExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDecimalExpr(FluxParser.DecimalExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDecimalExpr(FluxParser.DecimalExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFunctionCallExpr(FluxParser.FunctionCallExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFunctionCallExpr(FluxParser.FunctionCallExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterMulDivExpr(FluxParser.MulDivExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMulDivExpr(FluxParser.MulDivExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterLogicalANDExpr(FluxParser.LogicalANDExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLogicalANDExpr(FluxParser.LogicalANDExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterParenthesizedExpr(FluxParser.ParenthesizedExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitParenthesizedExpr(FluxParser.ParenthesizedExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterIntExpr(FluxParser.IntExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIntExpr(FluxParser.IntExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAddSubExpr(FluxParser.AddSubExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAddSubExpr(FluxParser.AddSubExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

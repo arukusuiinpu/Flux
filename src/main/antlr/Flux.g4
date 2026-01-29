@@ -1,13 +1,15 @@
 grammar Flux;
 
-program:   (declaration)+ EOF ;
+program:   terminator? (declaration | terminator)* EOF ;
 
 declaration
     :   functionDecl
-    |   varDecl ';'
+    |   varDecl terminator
     ;
 
-type:   'float' | 'double' | 'int' | 'bool' | 'void' | ID ;
+type:   'float' | 'double' | 'int' | 'bool' | 'string' | 'void' | ID ;
+
+terminator : TERMINATOR+ ;
 
 accessModifier: 'public' | 'protected' | 'private' ;
 implementationModifier: 'abstract' | 'static' | 'native' ;
@@ -57,15 +59,16 @@ formalParameter
     :   type ID
     ;
 
-block: '{' statement* '}' ;
+block: '{' (statement | terminator)* '}' ;
 
 statement
     :   block                                                   # BlockStatement
-    |   varDecl ';'                                             # VarDeclStatement
+    |   varDecl terminator                                      # VarDeclStatement
     |   'if' '(' expression ')' block ('else' block)?           # IfStatement
-    |   'return' expression? ';'                                # ReturnStatement
-    |   assignmentStat ';'                                      # AssignmentStatement
-    |   expression ';'                                          # ExpressionStatement
+    |   'return' expression? terminator                         # ReturnStatement
+    |   functionDecl                                            # FunctionDeclStatement
+    |   assignmentStat terminator                               # AssignmentStatement
+    |   expression terminator                                   # ExpressionStatement
     ;
 
 assignmentStat
@@ -97,22 +100,24 @@ expression
     |   INT                                                     # IntExpr
     |   DECIMAL                                                 # DecimalExpr
     |   BOOL                                                    # BoolExpr
+    |   STRING                                                  # StringExpr
     ;
 
 expressionList : expression (',' expression)* ;
 
+TERMINATOR : ';' | ( '\r'? '\n' )+ ;
 INT :   [0-9]+ ;
 DECIMAL : [0-9]+ '.' [0-9]+ ('f' | 'F' | 'd' | 'D')? ;
 BOOL : ('true' | 'false') ;
+STRING : '"' (LETTER | [0-9] | '_')* '"';
 ID  :   (LETTER | '_') (LETTER | [0-9] | '_')* ;
 
 fragment LETTER : [a-zA-Zа-яА-Я] ;
 
-WS  :   [ \t\n\r]+ -> skip ;
+NL : ( '\r'? '\n' ) ;
+WS : [ \t]+ -> skip ;
 
-SL_COMMENT
-    :   '//' .*? '\n' -> skip
-    ;
+SL_COMMENT : '//' .*? (NL | EOF) -> skip ;
 
 ML_COMMENT
     :   '/*' .*? '*/' -> skip
