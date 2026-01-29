@@ -18,5 +18,9 @@ project by any means in this initial state._
 
 _Sorted based on plausibility of quick implementation and urgency._
 
+## Example code:
+`float i = -5.5F
+float j = 69`
+
 ## 𓆝𓆟𓆞𓆟𓆞𓆝𓆟𓆞𓆝
 Feel free to contribute if you want!
