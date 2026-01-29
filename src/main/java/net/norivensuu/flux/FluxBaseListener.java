@@ -1,4 +1,4 @@
-// Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
+// Generated from C:/Users/student/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
 package net.norivensuu.flux;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -209,13 +209,25 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFunctionDecl(FluxParser.FunctionDeclContext ctx) { }
+	@Override public void enterRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitFunctionDecl(FluxParser.FunctionDeclContext ctx) { }
+	@Override public void exitRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -245,25 +257,109 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBlock(FluxParser.BlockContext ctx) { }
+	@Override public void enterVoidBlock(FluxParser.VoidBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBlock(FluxParser.BlockContext ctx) { }
+	@Override public void exitVoidBlock(FluxParser.VoidBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBlockStatement(FluxParser.BlockStatementContext ctx) { }
+	@Override public void enterReturnBlock(FluxParser.ReturnBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBlockStatement(FluxParser.BlockStatementContext ctx) { }
+	@Override public void exitReturnBlock(FluxParser.ReturnBlockContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterVoidBlockOption(FluxParser.VoidBlockOptionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitVoidBlockOption(FluxParser.VoidBlockOptionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExpressionReturn(FluxParser.ExpressionReturnContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExpressionReturn(FluxParser.ExpressionReturnContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterVoidReturn(FluxParser.VoidReturnContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitVoidReturn(FluxParser.VoidReturnContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterParenthesizedStatement(FluxParser.ParenthesizedStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitParenthesizedStatement(FluxParser.ParenthesizedStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterVoidBlockStatement(FluxParser.VoidBlockStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitVoidBlockStatement(FluxParser.VoidBlockStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterReturnBlockStatement(FluxParser.ReturnBlockStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitReturnBlockStatement(FluxParser.ReturnBlockStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -293,13 +389,25 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterReturnStatement(FluxParser.ReturnStatementContext ctx) { }
+	@Override public void enterExpressionReturnStatement(FluxParser.ExpressionReturnStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitReturnStatement(FluxParser.ReturnStatementContext ctx) { }
+	@Override public void exitExpressionReturnStatement(FluxParser.ExpressionReturnStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterVoidReturnStatement(FluxParser.VoidReturnStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitVoidReturnStatement(FluxParser.VoidReturnStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -353,13 +461,13 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterQualifiedName(FluxParser.QualifiedNameContext ctx) { }
+	@Override public void enterQualifiedId(FluxParser.QualifiedIdContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitQualifiedName(FluxParser.QualifiedNameContext ctx) { }
+	@Override public void exitQualifiedId(FluxParser.QualifiedIdContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -528,6 +636,18 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTernaryExpr(FluxParser.TernaryExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterVariableAccessExpr(FluxParser.VariableAccessExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitVariableAccessExpr(FluxParser.VariableAccessExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

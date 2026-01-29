@@ -7,12 +7,12 @@ declaration
     |   varDecl terminator
     ;
 
-type:   'float' | 'double' | 'int' | 'bool' | 'string' | 'void' | ID ;
+type:   'float' | 'double' | 'int' | 'bool' | 'string' | 'void' | qualifiedId ;
 
 terminator : TERMINATOR+ ;
 
-accessModifier: 'public' | 'protected' | 'private' ;
-implementationModifier: 'abstract' | 'static' | 'native' ;
+accessModifier : 'public' | 'protected' | 'private' ;
+implementationModifier : 'abstract' | 'static' | 'native' ;
 staticMd : 'static' ;
 finalMd : 'final' ;
 transientMd : 'transient' ;
@@ -48,7 +48,9 @@ functionModifiers
 
 functionDecl
     :   functionModifiers
-        type ID '(' formalParameters? ')' block
+        'void' ID '(' formalParameters? ')' voidBlock           # RunnableFunctionDecl
+    |   functionModifiers
+        type ID '(' formalParameters? ')' returnBlock           # ConsumerFunctionDecl
     ;
 
 formalParameters
@@ -59,27 +61,40 @@ formalParameter
     :   type ID
     ;
 
-block: '{' (statement | terminator)* '}' ;
+// TODO allow for statements to not need the last terminator (ex. string NewFunc(string str) { return str.repeat(7); System.out.println(wow) } )
+voidBlock : '{' (statement | terminator)* voidReturn* '}' ;
+returnBlock : '{' (statement | terminator)* expressionReturn* '}' ;
+
+block
+    :   returnBlock                                             # ReturnBlockOption
+    |   voidBlock                                               # VoidBlockOption
+    ;
+
+expressionReturn : 'return' expression terminator? ;
+voidReturn : 'return' terminator? ;
 
 statement
-    :   block                                                   # BlockStatement
+    :   '(' statement ')'                                       # ParenthesizedStatement
+    |   voidBlock                                               # VoidBlockStatement
+    |   returnBlock                                             # ReturnBlockStatement
     |   varDecl terminator                                      # VarDeclStatement
     |   'if' '(' expression ')' block ('else' block)?           # IfStatement
-    |   'return' expression? terminator                         # ReturnStatement
+    |   expressionReturn                                        # ExpressionReturnStatement
+    |   voidReturn                                              # VoidReturnStatement
     |   functionDecl                                            # FunctionDeclStatement
     |   assignmentStat terminator                               # AssignmentStatement
     |   expression terminator                                   # ExpressionStatement
     ;
 
 assignmentStat
-    :   qualifiedName ('[' expression ']')? '=' expression
+    :   qualifiedId ('[' expression ']')? '=' expression
     ;
 
-qualifiedName : ID ('.' ID)* ;
+qualifiedId : ID ('.' ID)* ;
 
 expression
     :   '(' expression ')'                                      # ParenthesizedExpr
-    |   '[' expression ']'                                      # SqParenthesizedExpr // Not Implemented
+    |   '[' expression ']'                                      # SqParenthesizedExpr // TODO Implement
     |   expression operator=('++' | '--')                       # PostfixExpr
     |   '(' type ')' expression                                 # CastExpr
     |   expression '**' expression                              # ExpExpr
@@ -96,9 +111,10 @@ expression
     |   expression ('&&' | 'and') expression                    # LogicalANDExpr
     |   expression ('||' | 'or') expression                     # LogicalORExpr
     |   expression '?' expression ':' expression                # TernaryExpr
-    |   qualifiedName '(' expressionList? ')'                   # FunctionCallExpr
-    |   qualifiedName '[' expression ']'                        # ArrayAccessExpr
-    |   qualifiedName                                           # IdExpr
+    |   qualifiedId '(' expressionList? ')'                     # FunctionCallExpr
+    |   qualifiedId '[' expression ']'                          # ArrayAccessExpr
+    |   expression '.' expression                               # VariableAccessExpr
+    |   qualifiedId                                             # IdExpr
     |   INT                                                     # IntExpr
     |   DECIMAL                                                 # DecimalExpr
     |   BOOL                                                    # BoolExpr

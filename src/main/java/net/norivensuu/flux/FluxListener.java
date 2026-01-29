@@ -1,4 +1,4 @@
-// Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
+// Generated from C:/Users/student/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
 package net.norivensuu.flux;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -168,15 +168,29 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitFunctionModifiers(FluxParser.FunctionModifiersContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link FluxParser#functionDecl}.
+	 * Enter a parse tree produced by the {@code RunnableFunctionDecl}
+	 * labeled alternative in {@link FluxParser#functionDecl}.
 	 * @param ctx the parse tree
 	 */
-	void enterFunctionDecl(FluxParser.FunctionDeclContext ctx);
+	void enterRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link FluxParser#functionDecl}.
+	 * Exit a parse tree produced by the {@code RunnableFunctionDecl}
+	 * labeled alternative in {@link FluxParser#functionDecl}.
 	 * @param ctx the parse tree
 	 */
-	void exitFunctionDecl(FluxParser.FunctionDeclContext ctx);
+	void exitRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code ConsumerFunctionDecl}
+	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * @param ctx the parse tree
+	 */
+	void enterConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ConsumerFunctionDecl}
+	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * @param ctx the parse tree
+	 */
+	void exitConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FluxParser#formalParameters}.
 	 * @param ctx the parse tree
@@ -198,27 +212,105 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitFormalParameter(FluxParser.FormalParameterContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link FluxParser#block}.
+	 * Enter a parse tree produced by {@link FluxParser#voidBlock}.
 	 * @param ctx the parse tree
 	 */
-	void enterBlock(FluxParser.BlockContext ctx);
+	void enterVoidBlock(FluxParser.VoidBlockContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link FluxParser#block}.
+	 * Exit a parse tree produced by {@link FluxParser#voidBlock}.
 	 * @param ctx the parse tree
 	 */
-	void exitBlock(FluxParser.BlockContext ctx);
+	void exitVoidBlock(FluxParser.VoidBlockContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code BlockStatement}
+	 * Enter a parse tree produced by {@link FluxParser#returnBlock}.
+	 * @param ctx the parse tree
+	 */
+	void enterReturnBlock(FluxParser.ReturnBlockContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#returnBlock}.
+	 * @param ctx the parse tree
+	 */
+	void exitReturnBlock(FluxParser.ReturnBlockContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code ReturnBlockOption}
+	 * labeled alternative in {@link FluxParser#block}.
+	 * @param ctx the parse tree
+	 */
+	void enterReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ReturnBlockOption}
+	 * labeled alternative in {@link FluxParser#block}.
+	 * @param ctx the parse tree
+	 */
+	void exitReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code VoidBlockOption}
+	 * labeled alternative in {@link FluxParser#block}.
+	 * @param ctx the parse tree
+	 */
+	void enterVoidBlockOption(FluxParser.VoidBlockOptionContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code VoidBlockOption}
+	 * labeled alternative in {@link FluxParser#block}.
+	 * @param ctx the parse tree
+	 */
+	void exitVoidBlockOption(FluxParser.VoidBlockOptionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#expressionReturn}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpressionReturn(FluxParser.ExpressionReturnContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#expressionReturn}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpressionReturn(FluxParser.ExpressionReturnContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#voidReturn}.
+	 * @param ctx the parse tree
+	 */
+	void enterVoidReturn(FluxParser.VoidReturnContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#voidReturn}.
+	 * @param ctx the parse tree
+	 */
+	void exitVoidReturn(FluxParser.VoidReturnContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code ParenthesizedStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterBlockStatement(FluxParser.BlockStatementContext ctx);
+	void enterParenthesizedStatement(FluxParser.ParenthesizedStatementContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code BlockStatement}
+	 * Exit a parse tree produced by the {@code ParenthesizedStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitBlockStatement(FluxParser.BlockStatementContext ctx);
+	void exitParenthesizedStatement(FluxParser.ParenthesizedStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code VoidBlockStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterVoidBlockStatement(FluxParser.VoidBlockStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code VoidBlockStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitVoidBlockStatement(FluxParser.VoidBlockStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code ReturnBlockStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterReturnBlockStatement(FluxParser.ReturnBlockStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ReturnBlockStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitReturnBlockStatement(FluxParser.ReturnBlockStatementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code VarDeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
@@ -244,17 +336,29 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitIfStatement(FluxParser.IfStatementContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code ReturnStatement}
+	 * Enter a parse tree produced by the {@code ExpressionReturnStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterReturnStatement(FluxParser.ReturnStatementContext ctx);
+	void enterExpressionReturnStatement(FluxParser.ExpressionReturnStatementContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code ReturnStatement}
+	 * Exit a parse tree produced by the {@code ExpressionReturnStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitReturnStatement(FluxParser.ReturnStatementContext ctx);
+	void exitExpressionReturnStatement(FluxParser.ExpressionReturnStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code VoidReturnStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterVoidReturnStatement(FluxParser.VoidReturnStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code VoidReturnStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitVoidReturnStatement(FluxParser.VoidReturnStatementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code FunctionDeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
@@ -302,15 +406,15 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitAssignmentStat(FluxParser.AssignmentStatContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link FluxParser#qualifiedName}.
+	 * Enter a parse tree produced by {@link FluxParser#qualifiedId}.
 	 * @param ctx the parse tree
 	 */
-	void enterQualifiedName(FluxParser.QualifiedNameContext ctx);
+	void enterQualifiedId(FluxParser.QualifiedIdContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link FluxParser#qualifiedName}.
+	 * Exit a parse tree produced by {@link FluxParser#qualifiedId}.
 	 * @param ctx the parse tree
 	 */
-	void exitQualifiedName(FluxParser.QualifiedNameContext ctx);
+	void exitQualifiedId(FluxParser.QualifiedIdContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code BoolExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -479,6 +583,18 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTernaryExpr(FluxParser.TernaryExprContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code VariableAccessExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterVariableAccessExpr(FluxParser.VariableAccessExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code VariableAccessExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitVariableAccessExpr(FluxParser.VariableAccessExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code BitwiseORExpr}
 	 * labeled alternative in {@link FluxParser#expression}.

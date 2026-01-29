@@ -1,7 +1,5 @@
-float i = 1.0F;
-float j = 1.0f;
-double k = 1.0;
-double m = 1.0d;
-private float Calculate(float a, float b) {	float c = a + b;	float d = 10;	return c + d;}
-void main() {	Calculate(i, j);	class _Class_TestString$457233904 {		static String TestString(String name) {			return "Hello, " + name + "!";		}
-    }	String wow = _Class_TestString$457233904.TestString("random user");	System.out.println(wow);}
+String TestString(String name) {	System.out.println("haiiiii");	return name;}
+String NewFunc(String str) {	return str.repeat(7);}
+String wow = TestString("random user");
+String wow2 = TestString("random user2");
+void main() {	System.out.println(wow);	System.out.println(wow2);}

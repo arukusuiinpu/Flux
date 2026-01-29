@@ -1,24 +1,14 @@
-float i = 1.0F // Java handles as float
-float j = 1.0 // Same here
+string TestString(string name) {
+    System.out.println("haiiiii")
+    return name
+   }
 
-double k = 1.0 // Java handles as double
-double m = 1.0d // Same here
+string NewFunc(string str) { string NewFunc2(string str2) { return str.repeat(7); System.out.println(wow); } return "hai"; System.out.println(wow); }
 
-private float Calculate(float a, float b) { // Inherits modifiers from Java
-
-    float c = a + b; float d = 10 // Both ; and \n serve as terminators
-    return c + d
-
-}
+string wow = TestString("random user")
+string wow2 = TestString("random user2")
 
 void main() {
-    Calculate(i, j)
-
-    string TestString(string name) { // Allows nested functions
-        return "Hello, " + name + "!"
-    }
-
-    string wow = TestString("random user")
-
-    System.out.println(wow) // Directly compiles in Java
+    System.out.println(wow)
+    System.out.println(wow2)
 }

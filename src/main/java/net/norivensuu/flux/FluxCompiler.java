@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
+// TODO Write a custom error handler for Flux code specifically (still expose the Java one)
 public class FluxCompiler {
 
     private static final Path OUTPUT_ROOT_DIR = Paths.get("src/generated");
@@ -95,7 +96,9 @@ public class FluxCompiler {
             System.err.println("Error writing generated Java file: " + e.getMessage());
         }
     }
+
     private static void generateMavenPomFile() {
+        // TODO Implement properly
         Path pomPath = OUTPUT_ROOT_DIR.resolve("pom.xml");
         try (FileWriter writer = new FileWriter(pomPath.toFile())) {
             System.out.println("\n--- Generating Maven POM file: " + pomPath + " ---");
