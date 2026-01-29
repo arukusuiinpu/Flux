@@ -60,6 +60,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
+    public String visitImportDecl(ImportDeclContext ctx) {
+        return String.format("import %s", ctx.qualifiedId());
+    }
+
+    @Override
     public String visitIntExpr(FluxParser.IntExprContext ctx) {
         return ctx.INT().getText();
     }
@@ -267,14 +272,19 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     public Declaration getDeclaration(String id, ParseTree ctx) {
         var siblings = getToSiblingsOfType(ctx, FluxParser.DeclarationContext.class);
+
         if (!siblings.isEmpty()) {
+            Print("----------------");
             for (var sibling : siblings) {
+                Print("sibling", sibling.functionDecl());
                 var myDeclaration = simplifyDeclaration(sibling);
 
-                if (id.equals(myDeclaration.id)) {
-                    String type = convertType(myDeclaration.type);
+                if (myDeclaration != null) {
+                    if (id.equals(myDeclaration.id)) {
+                        String type = convertType(myDeclaration.type);
 
-                    return new Declaration(type, id, myDeclaration.declarationType);
+                        return new Declaration(type, id, myDeclaration.declarationType);
+                    }
                 }
             }
         }
@@ -434,11 +444,13 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         var sibling = getToClosestSibling(ctx, FluxParser.FunctionDeclStatementContext.class);
         if (sibling != null) {
-            Print(ctx);
             var declaration = getDeclaration(ctx.qualifiedId().getText(), ctx);
+            Print("parent", ctx.getParent().getParent().getParent(), ctx.qualifiedId().getText(), declaration);
 
-            if (declaration.id.equals(ctx.qualifiedId().getText())) {
-                localClassString = String.format("_Class_%s$%s.", declaration.id, sibling.hashCode());
+            if (declaration != null) {
+                if (declaration.id.equals(ctx.qualifiedId().getText())) {
+                    localClassString = String.format("_Class_%s$%s.", declaration.id, sibling.hashCode());
+                }
             }
         }
 
@@ -472,7 +484,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         var functionDecl = ctx.functionDecl();
         var declaration = simplifyDeclaration(functionDecl);
         javaCode.indentLevel++;
-        String text = String.format("class _Class_%s$%s {%s\n}", declaration.id, functionDecl.hashCode(), "\r" + "\t".repeat(javaCode.indentLevel) + "static " + visit(ctx.functionDecl()));
+        String text = String.format("class _Class_%s$%s {%s\n}", declaration.id, functionDecl.hashCode(), "\r" + "\t".repeat(javaCode.indentLevel) + visit(ctx.functionDecl()));
         javaCode.indentLevel--;
         return text;
     }
@@ -549,6 +561,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return null;
     }
 
+    // TODO Fix sibling handling
     public static <T extends ParseTree> List<T> getToSiblingsOfType(ParseTree ctx, Class<T> targetType) {
         ParseTree parent = ctx.getParent();
         List<T> siblings = new ArrayList<>();

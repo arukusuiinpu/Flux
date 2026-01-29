@@ -3,7 +3,8 @@ grammar Flux;
 program:   terminator? (declaration | terminator)* EOF ;
 
 declaration
-    :   functionDecl
+    :   importDecl terminator
+    |   functionDecl
     |   varDecl terminator
     ;
 
@@ -20,6 +21,11 @@ volatileMd : 'volatile' ;
 synchronizedMd : 'synchronized' ;
 nativeMd : 'native' ;
 strictfpMd : 'strictfp' ;
+
+importDecl
+    :   'import' qualifiedId ('.*')?
+    |   'import static' qualifiedId ('.*')?
+    ;
 
 variableModifiers
     :
@@ -90,8 +96,6 @@ assignmentStat
     :   qualifiedId ('[' expression ']')? '=' expression
     ;
 
-qualifiedId : ID ('.' ID)* ;
-
 expression
     :   '(' expression ')'                                      # ParenthesizedExpr
     |   '[' expression ']'                                      # SqParenthesizedExpr // TODO Implement
@@ -128,7 +132,10 @@ INT :   [0-9]+ ;
 DECIMAL : [0-9]+ '.' [0-9]+ ('f' | 'F' | 'd' | 'D')? ;
 BOOL : ('true' | 'false') ;
 STRING : '"' ( '\\' . | ~[\\\r\n"] )* '"' ;
-ID  :   (LETTER | '_') (LETTER | [0-9] | '_')* ;
+SYMBOL : (LETTER | '_') ;
+
+ID  :   SYMBOL (SYMBOL | [0-9])* ;
+qualifiedId : ID ('.' ID)* ;
 
 fragment LETTER : [a-zA-Zа-яА-Я] ;
 

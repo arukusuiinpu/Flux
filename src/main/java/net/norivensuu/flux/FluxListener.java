@@ -1,4 +1,4 @@
-// Generated from C:/Users/student/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
+// Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
 package net.norivensuu.flux;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -137,6 +137,16 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitStrictfpMd(FluxParser.StrictfpMdContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#importDecl}.
+	 * @param ctx the parse tree
+	 */
+	void enterImportDecl(FluxParser.ImportDeclContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#importDecl}.
+	 * @param ctx the parse tree
+	 */
+	void exitImportDecl(FluxParser.ImportDeclContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FluxParser#variableModifiers}.
 	 * @param ctx the parse tree
@@ -405,16 +415,6 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitAssignmentStat(FluxParser.AssignmentStatContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link FluxParser#qualifiedId}.
-	 * @param ctx the parse tree
-	 */
-	void enterQualifiedId(FluxParser.QualifiedIdContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link FluxParser#qualifiedId}.
-	 * @param ctx the parse tree
-	 */
-	void exitQualifiedId(FluxParser.QualifiedIdContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code BoolExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -737,4 +737,14 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExpressionList(FluxParser.ExpressionListContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#qualifiedId}.
+	 * @param ctx the parse tree
+	 */
+	void enterQualifiedId(FluxParser.QualifiedIdContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#qualifiedId}.
+	 * @param ctx the parse tree
+	 */
+	void exitQualifiedId(FluxParser.QualifiedIdContext ctx);
 }

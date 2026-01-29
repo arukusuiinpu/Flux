@@ -1,4 +1,4 @@
-// Generated from C:/Users/student/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
+// Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
 package net.norivensuu.flux;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -88,6 +88,12 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStrictfpMd(FluxParser.StrictfpMdContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FluxParser#importDecl}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitImportDecl(FluxParser.ImportDeclContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#variableModifiers}.
 	 * @param ctx the parse tree
@@ -246,12 +252,6 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitAssignmentStat(FluxParser.AssignmentStatContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#qualifiedId}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitQualifiedId(FluxParser.QualifiedIdContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code BoolExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -440,4 +440,10 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExpressionList(FluxParser.ExpressionListContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FluxParser#qualifiedId}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitQualifiedId(FluxParser.QualifiedIdContext ctx);
 }

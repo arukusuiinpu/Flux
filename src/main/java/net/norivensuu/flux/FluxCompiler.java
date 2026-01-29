@@ -1,9 +1,8 @@
 package net.norivensuu.flux;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 
 import java.io.FileInputStream;
 import java.io.FileWriter;
@@ -12,60 +11,81 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Stream;
 
 // TODO Write a custom error handler for Flux code specifically (still expose the Java one)
 public class FluxCompiler {
 
+    private static final Path FLUX_SOURCE_ROOT = Paths.get("src/main/flux");
     private static final Path OUTPUT_ROOT_DIR = Paths.get("src/generated");
     private static final Path OUTPUT_SOURCE_ROOT = OUTPUT_ROOT_DIR.resolve("java");
     private static final Path OUTPUT_ROOT = OUTPUT_SOURCE_ROOT;
 
-    private static final Path PROJECT_ROOT = Paths.get("net/norivensuu/testflux");
+    private static final Path PROJECT_STRUCTURE_ROOT = Paths.get("net/norivensuu/testflux");
+    private static final Path PROJECT_ROOT = FLUX_SOURCE_ROOT.resolve(PROJECT_STRUCTURE_ROOT);
+    private static final Path PROJECT_METADATA = PROJECT_ROOT.resolve("inherited.flux");
+
+    private static Map<Path, FluxMetadata> metadataRegistry = new HashMap<>();
 
     static void main(String[] args) throws IOException {
-        System.out.println("Starting compilation of project: src/main/flux/" + PROJECT_ROOT);
+        System.out.println("Starting compilation of project: " + PROJECT_ROOT);
 
-//        generateMavenPomFile();
+        if (Files.exists(PROJECT_METADATA))
+            loadOrCreateMetadata(PROJECT_METADATA);
+        else
+            metadataRegistry.put(PROJECT_ROOT, new FluxMetadata().appendDefault());
 
-        try (Stream<Path> paths = Files.walk(Paths.get("src/main/flux/", PROJECT_ROOT.toString()))) {
+        try (Stream<Path> paths = Files.walk(PROJECT_ROOT)) {
             paths.filter(Files::isRegularFile)
-                    .filter(p -> p.toString().endsWith(".flux"))
+                    .filter(path -> path.endsWith(".flux"))
                     .forEach(FluxCompiler::compileFile);
         }
-    }
 
-    private static void runMavenCommand(String... commands) throws IOException, InterruptedException {
-        ProcessBuilder processBuilder = new ProcessBuilder();
-
-        String[] mvnCommand = new String[commands.length + 1];
-        mvnCommand[0] = "mvn";
-        System.arraycopy(commands, 0, mvnCommand, 1, commands.length);
-
-        processBuilder.command(mvnCommand);
-        processBuilder.directory(OUTPUT_ROOT_DIR.toFile());
-        processBuilder.inheritIO();
-
-        Process process = processBuilder.start();
-        int exitCode = process.waitFor();
-
-        if (exitCode != 0) {
-            throw new RuntimeException("Maven command failed with exit code: " + exitCode);
+        try (Stream<Path> paths = Files.walk(PROJECT_ROOT)) {
+            paths.filter(Files::isRegularFile)
+                    .forEach(p -> {
+                        String fileName = p.toString();
+                        if (fileName.endsWith(".flux")) {
+                            compileFile(p);
+                        } else if (fileName.endsWith(".flux.meta")) {
+                            FluxMetadata defaultMeta = new FluxMetadata().appendDefault();
+                            metadataRegistry.put(p, defaultMeta);
+                        }
+                    });
         }
     }
 
     private static void compileFile(Path filePath) {
         System.out.println("\n--- Compiling: " + filePath.getFileName() + " ---");
         try {
+            FluxMetadata metadata = buildClosestMetadata(filePath.getParent());
+
             InputStream input = new FileInputStream(filePath.toFile());
             CharStream cs = CharStreams.fromStream(input);
             FluxLexer lexer = new FluxLexer(cs);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             FluxParser parser = new FluxParser(tokens);
 
-            ParseTree tree = parser.program();
+            FluxParser.ProgramContext tree = parser.program();
 
-            System.out.println("Successfully parsed " + filePath.getFileName());
+            if (metadata != null && metadata.imports != null) {
+                for (String importPath : metadata.imports) {
+                    FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(tree, -1);
+
+                    FluxParser.QualifiedIdContext qualIdCtx = new FluxParser.QualifiedIdContext(syntheticImport, -1);
+
+                    Token pathToken = new CommonToken(FluxLexer.ID, importPath);
+                    TerminalNodeImpl node = new TerminalNodeImpl(pathToken);
+
+                    qualIdCtx.addAnyChild(node);
+                    syntheticImport.addAnyChild(qualIdCtx);
+
+                    tree.addAnyChild(syntheticImport);
+                }
+            }
+
+            System.out.println("Successfully parsed and enriched " + filePath.getFileName());
 
             JavaCodeGeneratorVisitor generator = new JavaCodeGeneratorVisitor();
             String generatedJavaCode = generator.visit(tree);
@@ -78,19 +98,112 @@ public class FluxCompiler {
         }
     }
 
+    private static FluxMetadata buildClosestMetadata(Path directory) {
+        Path current = directory;
+        FluxMetadata accumulatedMetadata = null;
+
+        while (current != null && current.startsWith(FLUX_SOURCE_ROOT)) {
+            FluxMetadata levelMetadata = metadataRegistry.get(current);
+
+            if (levelMetadata == null) {
+                levelMetadata = findMetadataInDirectory(current);
+            }
+
+            if (levelMetadata != null) {
+                accumulatedMetadata = applyMetadata(accumulatedMetadata, directory, levelMetadata);
+
+                if (levelMetadata.top) {
+                    accumulatedMetadata.top = true;
+                    break;
+                }
+            }
+
+            if (current.equals(FLUX_SOURCE_ROOT)) {
+                break;
+            }
+
+            current = current.getParent();
+        }
+
+        if (accumulatedMetadata == null) {
+            accumulatedMetadata = new FluxMetadata().appendDefault();
+        }
+
+        metadataRegistry.put(directory, accumulatedMetadata);
+        return accumulatedMetadata;
+    }
+
+    private static FluxMetadata findMetadataInDirectory(Path dir) {
+        try (var stream = Files.list(dir)) {
+            Optional<Path> metaFile = stream
+                    .filter(p -> p.toString().endsWith(".flux.meta"))
+                    .findFirst();
+
+
+            if (metaFile.isEmpty()) return null;
+
+            Path p = metaFile.get();
+            try {
+                return FluxMetadata.fromJson(Files.readString(p));
+            } catch (Exception e) {
+                System.err.println("Invalid metadata at " + p + ". Replacing with default.");
+                FluxMetadata freshMeta = new FluxMetadata().appendDefault();
+                Files.writeString(p, freshMeta.toJson());
+                return freshMeta;
+            }
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static FluxMetadata applyMetadata(FluxMetadata accumulator, Path originalDir, FluxMetadata found) {
+        if (accumulator == null)
+            accumulator = new FluxMetadata();
+        accumulator.imports.addAll(found.imports);
+        metadataRegistry.put(originalDir, accumulator);
+        return accumulator;
+    }
+
+    private static FluxMetadata loadOrCreateMetadata(Path fluxPath) throws IOException {
+        return loadOrCreateMetadata(fluxPath, false);
+    }
+    private static FluxMetadata loadOrCreateMetadata(Path targetPath, boolean top) throws IOException {
+        String pathStr = targetPath.toString();
+        Path metaPath = pathStr.endsWith(".flux")
+                ? Paths.get(pathStr + ".meta")
+                : targetPath.resolve(".flux.meta");
+
+        FluxMetadata meta;
+        try {
+            if (Files.exists(metaPath)) {
+                meta = FluxMetadata.fromJson(Files.readString(metaPath));
+            } else {
+                meta = new FluxMetadata(top).appendDefault();
+            }
+        } catch (Exception e) {
+            meta = new FluxMetadata(top).appendDefault();
+        }
+
+        Files.writeString(metaPath, meta.toJson());
+        return meta;
+    }
+
     private static void writeGeneratedJavaFile(Path originalFluxPath, String javaSourceCode) {
         try {
-            Path relativePath = PROJECT_ROOT;
-            Path outputDirectory = OUTPUT_ROOT.resolve(relativePath);
+            Path relativePath = FLUX_SOURCE_ROOT.relativize(originalFluxPath);
+
+            Path relativeParent = relativePath.getParent();
+            Path outputDirectory = (relativeParent != null)
+                    ? OUTPUT_ROOT.resolve(relativeParent)
+                    : OUTPUT_ROOT;
 
             Files.createDirectories(outputDirectory);
 
             String fileName = originalFluxPath.getFileName().toString().replace(".flux", ".java");
             Path outputPath = outputDirectory.resolve(fileName);
 
-            try (FileWriter writer = new FileWriter(outputPath.toFile())) {
-                writer.write(javaSourceCode);
-            }
+            Files.writeString(outputPath, javaSourceCode);
+
             System.out.println("Generated Java file: " + outputPath);
         } catch (IOException e) {
             System.err.println("Error writing generated Java file: " + e.getMessage());
