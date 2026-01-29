@@ -1,39 +1,24 @@
-float i = -5.5F
-float j = 69
+float i = 1.0F // Java handles as float
+float j = 1.0 // Same here
 
-private float a = -(-5.222)
+double k = 1.0 // Java handles as double
+double m = 1.0d // Same here
 
-float b
+private float Calculate(float a, float b) { // Inherits modifiers from Java
 
-double THE_COOLEST_DOUBLE = 100000.53526253456
-double яхочукушать = (-52539.6d*5936.2422D) ** THE_COOLEST_DOUBLE
+    float c = a + b; float d = 10 // Both ; and \n serve as terminators
+    return c + d;
 
-bool testA = true
-bool testC = i<j<6<77<Calculate(i, j)<9999
-
-private float Calculate(float a, float i) {
-    float c = 5 + 5; float m = 10
-    b = testC ? 1 : -52539.6*5936.2422
-    return c + m
 }
 
 void main() {
-    Calculate(a, i)
-    bool testD = !(i<j<6<77<Calculate(i, j)<9999)
-    Empty()
-    string TestString(float a, float b) {
-        a = 777
-        return "wooooow"
+    Calculate(i, j)
+
+    string TestString(string name) { // Allows nested functions
+        return "Hello, " + name + "!"
     }
 
-    string wow = TestString(1.0, 2.0)
-}
+    string wow = TestString("random user")
 
-public void Empty() {
-    int beta = 0
-    beta++
-    beta++
-    beta --
-    beta--
-    beta --
+    System.out.println(wow) // Directly compiles in Java
 }

@@ -98,7 +98,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         if (parent instanceof FluxParser.RelationalExprContext) {
             if (ctx.expression(1) instanceof FluxParser.FunctionCallExprContext idExpr) {
-                var declaration = getDeclaration(idExpr.ID().getText(), ctx);
+                var declaration = getDeclaration(idExpr.qualifiedName().getText(), ctx);
 
                 if (declaration != null) {
                     String varName = "_" + declaration.id + "$" + ctx.hashCode();
@@ -169,7 +169,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
         var assignmentStat = getToClosestParent(ctx, FluxParser.AssignmentStatContext.class);
         if (assignmentStat != null) {
-            var declaration = getDeclaration(assignmentStat.ID().getText(), ctx);
+            var declaration = getDeclaration(assignmentStat.qualifiedName().getText(), ctx);
             if (declaration != null) {
                 type = convertType(declaration.type);
             }
@@ -303,6 +303,12 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
+    public String visitStringExpr(StringExprContext ctx) {
+
+        return ctx.getText();
+    }
+
+    @Override
     public String visitBlock(FluxParser.BlockContext ctx) {
         StringBuilder blockCode = new StringBuilder("{");
         javaCode.indentLevel++;
@@ -383,12 +389,12 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         var sibling = getToClosestSibling(ctx, FluxParser.FunctionDeclStatementContext.class);
         if (sibling != null) {
             var functionDecl = sibling.functionDecl();
-            if (functionDecl.ID().getText().equals(ctx.ID().getText())) {
+            if (functionDecl.ID().getText().equals(ctx.qualifiedName().getText())) {
                 localClassString = String.format("_Class_%s$%s.", functionDecl.ID().getText(), functionDecl.hashCode());
             }
         }
 
-        String functionName = ctx.ID().getText();
+        String functionName = ctx.qualifiedName().getText();
         String args = "";
         if (ctx.expressionList() != null) {
             args = ctx.expressionList().expression().stream()
@@ -423,9 +429,9 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitAssignmentStatement(FluxParser.AssignmentStatementContext ctx) {
         if (ctx.assignmentStat().expression(1) != null) {
-            return String.format("%s[%s] = %s;", ctx.assignmentStat().ID().getText(), visit(ctx.assignmentStat().expression(1)), visit(ctx.assignmentStat().expression(0)));
+            return String.format("%s[%s] = %s;", ctx.assignmentStat().qualifiedName().getText(), visit(ctx.assignmentStat().expression(1)), visit(ctx.assignmentStat().expression(0)));
         }
-        else return String.format("%s = %s;", ctx.assignmentStat().ID().getText(), visit(ctx.assignmentStat().expression(0)));
+        else return String.format("%s = %s;", ctx.assignmentStat().qualifiedName().getText(), visit(ctx.assignmentStat().expression(0)));
     }
 
     @Override

@@ -302,6 +302,16 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitAssignmentStat(FluxParser.AssignmentStatContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link FluxParser#qualifiedName}.
+	 * @param ctx the parse tree
+	 */
+	void enterQualifiedName(FluxParser.QualifiedNameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#qualifiedName}.
+	 * @param ctx the parse tree
+	 */
+	void exitQualifiedName(FluxParser.QualifiedNameContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code BoolExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree

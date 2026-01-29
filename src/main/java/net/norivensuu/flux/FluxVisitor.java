@@ -186,6 +186,12 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAssignmentStat(FluxParser.AssignmentStatContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link FluxParser#qualifiedName}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitQualifiedName(FluxParser.QualifiedNameContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code BoolExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree

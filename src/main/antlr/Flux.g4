@@ -72,8 +72,10 @@ statement
     ;
 
 assignmentStat
-    :   ID ('[' expression ']')? '=' expression
+    :   qualifiedName ('[' expression ']')? '=' expression
     ;
+
+qualifiedName : ID ('.' ID)* ;
 
 expression
     :   '(' expression ')'                                      # ParenthesizedExpr
@@ -94,9 +96,9 @@ expression
     |   expression ('&&' | 'and') expression                    # LogicalANDExpr
     |   expression ('||' | 'or') expression                     # LogicalORExpr
     |   expression '?' expression ':' expression                # TernaryExpr
-    |   ID '(' expressionList? ')'                              # FunctionCallExpr
-    |   ID '[' expression ']'                                   # ArrayAccessExpr
-    |   ID                                                      # IdExpr
+    |   qualifiedName '(' expressionList? ')'                   # FunctionCallExpr
+    |   qualifiedName '[' expression ']'                        # ArrayAccessExpr
+    |   qualifiedName                                           # IdExpr
     |   INT                                                     # IntExpr
     |   DECIMAL                                                 # DecimalExpr
     |   BOOL                                                    # BoolExpr
@@ -109,7 +111,7 @@ TERMINATOR : ';' | ( '\r'? '\n' )+ ;
 INT :   [0-9]+ ;
 DECIMAL : [0-9]+ '.' [0-9]+ ('f' | 'F' | 'd' | 'D')? ;
 BOOL : ('true' | 'false') ;
-STRING : '"' (LETTER | [0-9] | '_')* '"';
+STRING : '"' ( '\\' . | ~[\\\r\n"] )* '"' ;
 ID  :   (LETTER | '_') (LETTER | [0-9] | '_')* ;
 
 fragment LETTER : [a-zA-Zа-яА-Я] ;
@@ -117,8 +119,6 @@ fragment LETTER : [a-zA-Zа-яА-Я] ;
 NL : ( '\r'? '\n' ) ;
 WS : [ \t]+ -> skip ;
 
-SL_COMMENT : '//' .*? (NL | EOF) -> skip ;
+SL_COMMENT : '//' ~[\r\n]* -> channel(HIDDEN) ;
 
-ML_COMMENT
-    :   '/*' .*? '*/' -> skip
-    ;
+ML_COMMENT : '/*' .*? '*/' -> channel(HIDDEN) ;
