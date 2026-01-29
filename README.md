@@ -29,7 +29,7 @@ double m = 1.0d // Same here
 private float Calculate(float a, float b) { // Inherits modifiers from Java
     
     float c = a + b; float d = 10 // Both ; and \n serve as terminators
-    return c + d;
+    return c + d
     
 }
 
