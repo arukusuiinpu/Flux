@@ -99,6 +99,7 @@ public class FluxCompiler {
                 FluxParser.DeclarationContext declarationContext = new FluxParser.DeclarationContext(tree, -1);
                 FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(declarationContext, -1);
 
+                //TODO Fix every anonymous token!
                 syntheticImport.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "import ")));
 
                 FluxParser.QualifiedIdContext qualIdCtx = new FluxParser.QualifiedIdContext(syntheticImport, -1);
