@@ -12,28 +12,43 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.norivensuu.flux.FluxParser.*;
+import static net.norivensuu.flux.utils.FluxUtils.*;
 
 public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
+    public static final class StandartFluxLibs {
+        public static final String MATH_UTILS = "net.norivensuu.flux.utils.MathUtils.*";
+        public static final String STATIC_MATH_UTILS = "static " + MATH_UTILS;
+    }
+
     public final List<String> pendingAssertions = new ArrayList<>();
 
-    public static class JavaCode {
+    public class JavaCode {
         public StringBuilder builder;
         public int indentLevel;
+        public int atIndex;
+        public int lastImportsLine;
+        public boolean checkDeclarations = true;
+
+        public Map<DeclarationContext, Integer> checkedDeclarations = new HashMap<>();
 
         public JavaCode() {
             builder = new StringBuilder();
         }
 
-        public JavaCode append(String line) {
-            builder.append(line);
-            return this;
+        public StringBuilder addLine(String line, int at) {
+            return builder.insert(at, String.format("%s%s\n", "\t".repeat(indentLevel), line));
         }
 
-        public JavaCode addLine(String line) {
-            return append("\t".repeat(indentLevel))
-                    .append(line)
-                    .append("\n");
+        public void checkDeclaration(DeclarationContext ctx, int lastIndex) {
+            atIndex += lastIndex;
+            checkedDeclarations.put(ctx, lastIndex);
+        }
+
+        public void resetJavaCode() {
+//            indentLevel = 0;
+            atIndex = 0;
+            checkDeclarations = true;
         }
 
         @Override
@@ -42,34 +57,59 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
     }
 
-    JavaCode javaCode;
+    public FluxCompiler.Program getProgram(ParseTree ctx) {
+        return  FluxCompiler.getProgramRegistry().get(getToClosestParent(ctx, ProgramContext.class));
+    }
 
     @Override
     public String visitProgram(FluxParser.ProgramContext ctx) {
-        javaCode = new JavaCode();
+        var program = FluxCompiler.getProgramRegistry().get(ctx);
+
+        program.javaCode = new JavaCode();
 
         if (!ctx.statement().isEmpty()) {
             synthesizeMainFunction(ctx.statement(), ctx);
         }
 
-        for (var declarationCtx : ctx.declaration()) {
-            if (declarationCtx.importDecl() != null) {
-                FluxParser.ImportDeclContext importDeclCtx = declarationCtx.importDecl();
+        while (program.javaCode.checkDeclarations) {
+            program.javaCode.resetJavaCode();
+            program.javaCode.checkDeclarations = false;
 
-                javaCode.addLine(visit(importDeclCtx));
-            } else if (declarationCtx.varDecl() != null) {
-                FluxParser.VarDeclContext varDeclCtx = declarationCtx.varDecl();
+            for (var declarationCtx : ctx.declaration()) {
+                if (program.javaCode.checkDeclarations)
+                    break;
 
-                javaCode.addLine(visit(varDeclCtx));
-            } else if (declarationCtx.functionDecl() != null) {
-                String functionCode = visit(declarationCtx.functionDecl());
-                if (functionCode != null) {
-                    javaCode.addLine(functionCode.replace("\n", "\n    ").trim());
+                if (!program.javaCode.checkedDeclarations.containsKey(declarationCtx)) {
+                    String javaString = "";
+                    if (declarationCtx.importDecl() != null) {
+                        FluxParser.ImportDeclContext declCtx = declarationCtx.importDecl();
+
+                        javaString = visit(declCtx);
+                        program.javaCode.addLine(javaString, program.javaCode.atIndex);
+                        program.javaCode.lastImportsLine += javaString.length()+1;
+                    } else if (declarationCtx.varDecl() != null) {
+                        FluxParser.VarDeclContext declCtx = declarationCtx.varDecl();
+
+                        javaString = visit(declCtx);
+                        program.javaCode.addLine(javaString, program.javaCode.atIndex);
+                    } else if (declarationCtx.functionDecl() != null) {
+                        String functionCode = visit(declarationCtx.functionDecl());
+                        if (functionCode != null) {
+                            javaString = functionCode.replace("\n", "\n    ").trim();
+                            program.javaCode.addLine(javaString, program.javaCode.atIndex);
+                        }
+                    }
+                    else continue;
+
+                    program.javaCode.checkDeclaration(declarationCtx, javaString.length()+1);
+                }
+                else {
+                    program.javaCode.atIndex += program.javaCode.checkedDeclarations.get(declarationCtx);
                 }
             }
         }
 
-        return javaCode.toString();
+        return program.javaCode.toString();
     }
 
     @Override
@@ -163,6 +203,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitTernaryExpr(FluxParser.TernaryExprContext ctx) {
         return String.format("((%s) ? %s : %s)", visit(ctx.expression(0)), visit(ctx.expression(1)), visit(ctx.expression(2)));
+    }
+
+    @Override
+    public String visitVariableAccessExpr(VariableAccessExprContext ctx) {
+        return String.format("%s.%s", visit(ctx.expression(0)), visit(ctx.expression(1)));
     }
 
     @Override
@@ -446,6 +491,45 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
+    public String visitTetrExpr(TetrExprContext ctx) {
+        return visitTetr(ctx.expression(0), ctx.expression(1), ctx);
+    }
+
+    public String visitTetr(Object exp1, Object exp2, ParseTree ctx) {
+        ensureImport(ctx, StandartFluxLibs.STATIC_MATH_UTILS);
+
+        return visitBinaryOp(exp1, exp2, ctx,
+                (e1, e2) -> String.format("estimateTetration(%s, %s)", e1, e2));
+    }
+
+    public FluxParser.DeclarationContext ensureImport(ParseTree ctx, String importPath) {
+        return ensureImport(getProgram(ctx), importPath);
+    }
+    public FluxParser.DeclarationContext ensureImport(FluxCompiler.Program program, String importPath) {
+        if (program != null && !program.imports.contains(importPath)) {
+            var declarationCtx = program.addImport(importPath);
+
+            FluxParser.ImportDeclContext declCtx = declarationCtx.importDecl();
+
+            int indent = program.javaCode.indentLevel;
+
+            String javaString = visit(declCtx);
+
+            program.javaCode.indentLevel = 0;
+            program.javaCode.addLine(javaString, program.javaCode.lastImportsLine);
+            program.javaCode.indentLevel = indent;
+
+            int index = javaString.length()+1;
+
+            program.javaCode.lastImportsLine += index;
+            program.javaCode.checkDeclaration(declarationCtx, index);
+
+            return declarationCtx;
+        }
+        return null;
+    }
+
+    @Override
     public String visitFloorDivExpr(FloorDivExprContext ctx) {
         return visitFloorDiv(ctx.expression(0), ctx.expression(1), ctx);
     }
@@ -516,6 +600,30 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return castString;
     }
 
+    public String getAutoType(Object object) {
+        String type = object.getClass().getTypeName();
+        if (object instanceof IdExprContext expr) {
+            type = expr.getText();
+        }
+        else if (object instanceof IntExprContext expr) {
+            type = "int";
+        }
+        else if (object instanceof DecimalExprContext expr) {
+            type = "double";
+        }
+        else if (object instanceof BoolExprContext expr) {
+            type = "boolean";
+        }
+        else if (object instanceof StringExprContext expr) {
+            type = "String";
+        }
+        else if (object instanceof CharExprContext expr) {
+            type = "char";
+        }
+
+        return convertType(type); // Just to be safe
+    }
+
     private String visitBinaryOp(Object exp1, Object exp2, ParseTree ctx, BiFunction<String, String, String> formatter) {
         String str1 = (exp1 instanceof String s) ? s : (exp1 instanceof ParseTree t) ? visit(t) : null;
         String str2 = (exp2 instanceof String s) ? s : (exp2 instanceof ParseTree t) ? visit(t) : null;
@@ -553,27 +661,29 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitVoidBlock(VoidBlockContext ctx) {
-        return visitBlock(ctx.statement(), null);
+        return visitBlock(ctx, ctx.statement(), null);
     }
 
     @Override
     public String visitReturnBlock(ReturnBlockContext ctx) {
-        return visitBlock(ctx.statement(), ctx.expressionReturn().stream().map(ExpressionReturnContext::expression).collect(Collectors.toList()));
+        return visitBlock(ctx, ctx.statement(), ctx.expressionReturn().stream().map(ExpressionReturnContext::expression).collect(Collectors.toList()));
     }
 
-    public String visitBlock(List<FluxParser.StatementContext> statement, List<ExpressionContext> expressions) {
+    public String visitBlock(ParseTree ctx, List<FluxParser.StatementContext> statement, List<ExpressionContext> expressions) {
+        var program = getProgram(ctx);
+
         StringBuilder blockCode = new StringBuilder("{");
-        javaCode.indentLevel++;
+        program.javaCode.indentLevel++;
         for (var statementCtx : statement) {
-            blockCode.append("\r").append("\t".repeat(javaCode.indentLevel)).append(visit(statementCtx));
+            blockCode.append("\r").append("\t".repeat(program.javaCode.indentLevel)).append(visit(statementCtx));
         }
         if (expressions != null) {
             for (var expression : expressions) {
-                blockCode.append("\r").append("\t".repeat(javaCode.indentLevel)).append(visit(expression));
+                blockCode.append("\r").append("\t".repeat(program.javaCode.indentLevel)).append(visit(expression));
             }
         }
-        javaCode.indentLevel--;
-        blockCode.append("\r").append("\t".repeat(javaCode.indentLevel)).append("}");
+        program.javaCode.indentLevel--;
+        blockCode.append("\r").append("\t".repeat(program.javaCode.indentLevel)).append("}");
         return blockCode.toString();
     }
 
@@ -730,12 +840,14 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitFunctionDeclStatement(FunctionDeclStatementContext ctx) {
+        var program = getProgram(ctx);
+
         var functionDecl = ctx.functionDecl();
         var declaration = simplifyDeclaration(functionDecl);
-        javaCode.indentLevel++;
+        program.javaCode.indentLevel++;
         String uniqueId = String.format("%s$%s", declaration.id, functionDecl.hashCode());
-        String text = String.format("class _Class_%s {%s\n}\nvar _class_%s = new _Class_%s();", uniqueId, "\r" + "\t".repeat(javaCode.indentLevel) + visit(ctx.functionDecl()), uniqueId, uniqueId);
-        javaCode.indentLevel--;
+        String text = String.format("class _Class_%s {%s\n}\nvar _class_%s = new _Class_%s();", uniqueId, "\r" + "\t".repeat(program.javaCode.indentLevel) + visit(ctx.functionDecl()), uniqueId, uniqueId);
+        program.javaCode.indentLevel--;
         return text;
     }
 
@@ -919,17 +1031,5 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         else if (type.equals("string"))
             return "String";
         return type;
-    }
-
-    @SafeVarargs
-    public static <T> void Print(T... out) {
-        StringBuilder builder = new StringBuilder();
-        for (var o : out) {
-            if (o instanceof ParseTree parseTree) {
-                builder.append(parseTree.getText()).append(" ");
-            }
-            else builder.append(o).append(" ");
-        }
-        System.out.println(builder);
     }
 }

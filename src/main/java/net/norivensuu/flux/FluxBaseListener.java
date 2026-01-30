@@ -509,6 +509,18 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterTetrAssigmnent(FluxParser.TetrAssigmnentContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTetrAssigmnent(FluxParser.TetrAssigmnentContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterFloorDivAssigmnent(FluxParser.FloorDivAssigmnentContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -864,6 +876,18 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitLogicalANDExpr(FluxParser.LogicalANDExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTetrExpr(FluxParser.TetrExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTetrExpr(FluxParser.TetrExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
