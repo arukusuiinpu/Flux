@@ -47,7 +47,7 @@ void main() {
         return "Hello, " + name + "!"
     }
 
-    string wow = SampleString("random user") + test.toString()
+    string wow = SampleString("random user") + test
     
     System.out.println(wow) // Directly compiles in Java
 }

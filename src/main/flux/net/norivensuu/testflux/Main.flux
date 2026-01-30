@@ -10,13 +10,11 @@ bool test;
 
 private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 
-    float c = a + b; double d = 3.14 // Both ; and \n serve as terminators
+    float c = a + b; float d = 3.14 // Both ; and \n serve as terminators
 
-    double m = c ** d // Exponent operator
+    float m = c ** d // Exponent operator
 
     bool k = c < d < m // Chained comparisons are supported
-
-    return k
 }
 
 void main() {
