@@ -63,27 +63,7 @@ public class FluxCompiler {
 
             InputStream input = new FileInputStream(filePath.toFile());
             CharStream cs = CharStreams.fromStream(input);
-            FluxLexer lexer = new FluxLexer(cs);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            FluxParser parser = new FluxParser(tokens);
-
-            FluxParser.ProgramContext tree = parser.program();
-
-            if (metadata != null && metadata.imports != null) {
-                for (String importPath : metadata.imports) {
-                    FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(tree, -1);
-
-                    FluxParser.QualifiedIdContext qualIdCtx = new FluxParser.QualifiedIdContext(syntheticImport, -1);
-
-                    Token pathToken = new CommonToken(FluxLexer.ID, importPath);
-                    TerminalNodeImpl node = new TerminalNodeImpl(pathToken);
-
-                    qualIdCtx.addAnyChild(node);
-                    syntheticImport.addAnyChild(qualIdCtx);
-
-                    tree.addAnyChild(syntheticImport);
-                }
-            }
+            FluxParser.ProgramContext tree = getProgramContext(cs, metadata);
 
             System.out.println("Successfully parsed and enriched " + filePath.getFileName());
 
@@ -96,6 +76,60 @@ public class FluxCompiler {
             System.err.println("Error processing file: " + filePath);
             e.printStackTrace();
         }
+    }
+
+    private static FluxParser.ProgramContext getProgramContext(CharStream cs, FluxMetadata metadata) {
+        FluxLexer lexer = new FluxLexer(cs);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        FluxParser parser = new FluxParser(tokens);
+
+        FluxParser.ProgramContext tree = parser.program();
+
+        if (metadata != null && metadata.imports != null) {
+            Set<String> existingImports = new HashSet<>();
+            if (tree.children != null) {
+                for (ParseTree child : tree.children) {
+                    if (child instanceof FluxParser.DeclarationContext decl) {
+                        if (decl.importDecl() != null && decl.importDecl().qualifiedId() != null) {
+                            existingImports.add(decl.importDecl().qualifiedId().getText() + (decl.importDecl().wildcard != null ? decl.importDecl().wildcard.getText() : ".*"));
+                        }
+                    }
+                }
+            }
+
+            for (String importPath : metadata.imports) {
+                if (existingImports.contains(importPath)) {
+                    continue;
+                }
+
+                FluxParser.DeclarationContext declarationContext = new FluxParser.DeclarationContext(tree, -1);
+                FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(declarationContext, -1);
+
+                syntheticImport.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "import ")));
+
+                FluxParser.QualifiedIdContext qualIdCtx = new FluxParser.QualifiedIdContext(syntheticImport, -1);
+                qualIdCtx.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.ID, importPath)));
+                syntheticImport.addAnyChild(qualIdCtx);
+
+                Token wildcardToken = new CommonToken(FluxLexer.WILDCARD, ".*");
+                syntheticImport.addAnyChild(new TerminalNodeImpl(wildcardToken));
+
+                FluxParser.TerminatorContext terminator = new FluxParser.TerminatorContext(declarationContext, -1);
+                terminator.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.TERMINATOR, ";")));
+
+                declarationContext.addAnyChild(syntheticImport);
+                declarationContext.addAnyChild(terminator);
+
+                if (tree.children == null) {
+                    tree.addAnyChild(declarationContext);
+                } else {
+                    tree.children.add(0, declarationContext);
+                }
+                declarationContext.parent = tree;
+            }
+        }
+
+        return tree;
     }
 
     private static FluxMetadata buildClosestMetadata(Path directory) {

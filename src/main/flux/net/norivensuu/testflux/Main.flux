@@ -1,5 +1,3 @@
-import java.util.*
-
 string NewFunc(string str) {
     string NewFunc2(string str2) {
         System.out.println("wooow");

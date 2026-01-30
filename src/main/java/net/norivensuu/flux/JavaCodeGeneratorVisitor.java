@@ -46,7 +46,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         javaCode = new JavaCode();
 
         for (FluxParser.DeclarationContext declarationCtx : ctx.declaration()) {
-            if (declarationCtx.varDecl() != null) {
+            if (declarationCtx.importDecl() != null) {
+                FluxParser.ImportDeclContext importDeclCtx = declarationCtx.importDecl();
+
+                javaCode.addLine(visit(importDeclCtx));
+            } else if (declarationCtx.varDecl() != null) {
                 FluxParser.VarDeclContext varDeclCtx = declarationCtx.varDecl();
 
                 javaCode.addLine(visit(varDeclCtx));
@@ -61,7 +65,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitImportDecl(ImportDeclContext ctx) {
-        return String.format("import %s", ctx.qualifiedId());
+        return String.format("import %s%s;", ctx.qualifiedId().getText(), ctx.wildcard != null ? ctx.wildcard.getText() : "");
     }
 
     @Override
@@ -263,6 +267,13 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return null;
     }
 
+    public Declaration simplifyDeclaration(VarDeclContext ctx) {
+        String declType = ctx.type().getText();
+        String declId = ctx.ID().getText();
+
+        return new Declaration(declType, declId, "function");
+    }
+
     public Declaration simplifyDeclaration(FunctionDeclContext ctx) {
         String declType = ctx instanceof RunnableFunctionDeclContext ? "void" : ((ConsumerFunctionDeclContext) ctx).type().getText();
         String declId = ctx instanceof RunnableFunctionDeclContext ? ((RunnableFunctionDeclContext) ctx).ID().getText() : ((ConsumerFunctionDeclContext) ctx).ID().getText();
@@ -274,10 +285,40 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         var siblings = getToSiblingsOfType(ctx, FluxParser.DeclarationContext.class);
 
         if (!siblings.isEmpty()) {
-            Print("----------------");
             for (var sibling : siblings) {
-                Print("sibling", sibling.functionDecl());
                 var myDeclaration = simplifyDeclaration(sibling);
+
+                if (myDeclaration != null) {
+                    if (id.equals(myDeclaration.id)) {
+                        String type = convertType(myDeclaration.type);
+
+                        return new Declaration(type, id, myDeclaration.declarationType);
+                    }
+                }
+            }
+        }
+
+        var funcSiblings = getToSiblingsOfType(ctx, FluxParser.FunctionDeclStatementContext.class);
+
+        if (!funcSiblings.isEmpty()) {
+            for (var sibling : funcSiblings) {
+                var myDeclaration = simplifyDeclaration(sibling.functionDecl());
+
+                if (myDeclaration != null) {
+                    if (id.equals(myDeclaration.id)) {
+                        String type = convertType(myDeclaration.type);
+
+                        return new Declaration(type, id, myDeclaration.declarationType);
+                    }
+                }
+            }
+        }
+
+        var varSiblings = getToSiblingsOfType(ctx, FluxParser.VarDeclStatementContext.class);
+
+        if (!varSiblings.isEmpty()) {
+            for (var sibling : varSiblings) {
+                var myDeclaration = simplifyDeclaration(sibling.varDecl());
 
                 if (myDeclaration != null) {
                     if (id.equals(myDeclaration.id)) {
@@ -442,14 +483,13 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     public String visitFunctionCallExpr(FluxParser.FunctionCallExprContext ctx) {
         String localClassString = "";
 
-        var sibling = getToClosestSibling(ctx, FluxParser.FunctionDeclStatementContext.class);
+        var sibling = getToClosestSibling(ctx.getParent(), FluxParser.FunctionDeclStatementContext.class);
         if (sibling != null) {
             var declaration = getDeclaration(ctx.qualifiedId().getText(), ctx);
-            Print("parent", ctx.getParent().getParent().getParent(), ctx.qualifiedId().getText(), declaration);
 
             if (declaration != null) {
                 if (declaration.id.equals(ctx.qualifiedId().getText())) {
-                    localClassString = String.format("_Class_%s$%s.", declaration.id, sibling.hashCode());
+                    localClassString = String.format("_class_%s$%s.", declaration.id, sibling.functionDecl().hashCode());
                 }
             }
         }
@@ -475,7 +515,6 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitExpressionReturnStatement(ExpressionReturnStatementContext ctx) {
-        Print(ctx.expressionReturn().expression());
         return "return " + visit(ctx.expressionReturn().expression()) + ";";
     }
 
@@ -484,7 +523,8 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         var functionDecl = ctx.functionDecl();
         var declaration = simplifyDeclaration(functionDecl);
         javaCode.indentLevel++;
-        String text = String.format("class _Class_%s$%s {%s\n}", declaration.id, functionDecl.hashCode(), "\r" + "\t".repeat(javaCode.indentLevel) + visit(ctx.functionDecl()));
+        String uniqueId = String.format("%s$%s", declaration.id, functionDecl.hashCode());
+        String text = String.format("class _Class_%s {%s\n}\nvar _class_%s = new _Class_%s();", uniqueId, "\r" + "\t".repeat(javaCode.indentLevel) + visit(ctx.functionDecl()), uniqueId, uniqueId);
         javaCode.indentLevel--;
         return text;
     }

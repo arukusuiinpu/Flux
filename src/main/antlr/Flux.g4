@@ -23,8 +23,8 @@ nativeMd : 'native' ;
 strictfpMd : 'strictfp' ;
 
 importDecl
-    :   'import' qualifiedId ('.*')?
-    |   'import static' qualifiedId ('.*')?
+    :   'import' qualifiedId (wildcard=WILDCARD)?
+    |   'import static' qualifiedId (wildcard=WILDCARD)?
     ;
 
 variableModifiers
@@ -133,6 +133,7 @@ DECIMAL : [0-9]+ '.' [0-9]+ ('f' | 'F' | 'd' | 'D')? ;
 BOOL : ('true' | 'false') ;
 STRING : '"' ( '\\' . | ~[\\\r\n"] )* '"' ;
 SYMBOL : (LETTER | '_') ;
+WILDCARD : '.*' ;
 
 ID  :   SYMBOL (SYMBOL | [0-9])* ;
 qualifiedId : ID ('.' ID)* ;
