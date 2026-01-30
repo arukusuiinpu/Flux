@@ -15,6 +15,8 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
     float m = c ** d // Exponent operator
 
     bool k = c < d < m // Chained comparisons are supported
+
+    return k
 }
 
 void main() {
