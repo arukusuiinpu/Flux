@@ -1,23 +1,30 @@
-string NewFunc(string str) {
-    string NewFunc2(string str2) {
-        System.out.println("wooow");
-        return str.repeat(7)
-    }
+import java.lang.* // Inherits Java libraries and importing structure
 
-    string hai = NewFunc2("hai");
+float i = 1.0F // Java handles as float
+float j = 1.0 // Same here
 
-    System.out.println("woow"); return hai;
+double k = 1.0 // Java handles as double
+double m = 1.0d // Same here
+
+bool test;
+
+private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
+
+    float c = a + b; float d = 3.14 // Both ; and \n serve as terminators
+
+    float m = c ** d // Exponent operator
+
+    bool k = c < d < m // Chained comparisons are supported
 }
-
-string TestString(string name) {
-    System.out.println("haiiiii")
-    return name
-}
-
-string wow = TestString("random user")
-string wow2 = TestString("random user2")
 
 void main() {
-    System.out.println(wow)
-    System.out.println(wow2)
+    test = SampleFunction(i, j)
+
+    string SampleString(string name) { // Allows nested functions
+        return "Hello, " + name + "!"
+    }
+
+    string wow = SampleString("random user") + test.toString()
+
+    System.out.println(wow) // Directly compiles in Java
 }

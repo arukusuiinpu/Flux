@@ -132,10 +132,10 @@ INT :   [0-9]+ ;
 DECIMAL : [0-9]+ '.' [0-9]+ ('f' | 'F' | 'd' | 'D')? ;
 BOOL : ('true' | 'false') ;
 STRING : '"' ( '\\' . | ~[\\\r\n"] )* '"' ;
-SYMBOL : (LETTER | '_') ;
 WILDCARD : '.*' ;
 
 ID  :   SYMBOL (SYMBOL | [0-9])* ;
+SYMBOL : (LETTER | '_') ;
 qualifiedId : ID ('.' ID)* ;
 
 fragment LETTER : [a-zA-Zа-яА-Я] ;
