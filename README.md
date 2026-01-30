@@ -54,14 +54,3 @@ void main() {
 ```
 ## 𓆝𓆟𓆞𓆟𓆞𓆝𓆟𓆞𓆝
 Feel free to contribute if you want!
-    string TestString(string name) { // Allows nested functions
-        return "Hello, " + name + "!"
-    }
-
-    string wow = TestString("random user")
-    
-    System.out.println(wow) // Directly compiles in Java
-}
-```
-## 𓆝𓆟𓆞𓆟𓆞𓆝𓆟𓆞𓆝
-Feel free to contribute if you want!
