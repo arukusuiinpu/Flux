@@ -1,10 +1,13 @@
 package net.norivensuu.flux;
 
 import org.antlr.v4.runtime.CommonToken;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,7 +48,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     public String visitProgram(FluxParser.ProgramContext ctx) {
         javaCode = new JavaCode();
 
-        for (FluxParser.DeclarationContext declarationCtx : ctx.declaration()) {
+        if (!ctx.statement().isEmpty()) {
+            synthesizeMainFunction(ctx.statement(), ctx);
+        }
+
+        for (var declarationCtx : ctx.declaration()) {
             if (declarationCtx.importDecl() != null) {
                 FluxParser.ImportDeclContext importDeclCtx = declarationCtx.importDecl();
 
@@ -56,11 +63,60 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                 javaCode.addLine(visit(varDeclCtx));
             } else if (declarationCtx.functionDecl() != null) {
                 String functionCode = visit(declarationCtx.functionDecl());
-                javaCode.addLine(functionCode.replace("\n", "\n    ").trim());
+                if (functionCode != null) {
+                    javaCode.addLine(functionCode.replace("\n", "\n    ").trim());
+                }
             }
         }
 
         return javaCode.toString();
+    }
+
+    private FluxParser.DeclarationContext synthesizeMainFunction(List<FluxParser.StatementContext> statements, FluxParser.ProgramContext parent) {
+        FluxParser.DeclarationContext declCtx = new FluxParser.DeclarationContext(parent, -1);
+
+        FluxParser.FunctionDeclContext funcDecl = new FluxParser.FunctionDeclContext(declCtx, -1);
+
+        FluxParser.RunnableFunctionDeclContext mainFunc = new FluxParser.RunnableFunctionDeclContext(funcDecl);
+
+        FluxParser.FunctionModifiersContext modifiers = new FluxParser.FunctionModifiersContext(funcDecl, -1);
+
+        FluxParser.AccessModifierContext accessCtx = new FluxParser.AccessModifierContext(modifiers, -1);
+
+        accessCtx.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "public")));
+
+        modifiers.addChild(accessCtx);
+
+        mainFunc.addChild(modifiers);
+
+        mainFunc.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.VOID, "void")));
+        TerminalNodeImpl idNode = new TerminalNodeImpl(new CommonToken(FluxLexer.ID, "main"));
+        mainFunc.addChild(idNode);
+
+        mainFunc.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__1, "(")));
+        mainFunc.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__2, ")")));
+
+        FluxParser.VoidBlockContext voidBlock = new FluxParser.VoidBlockContext(mainFunc, -1);
+        voidBlock.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__3, "{"))); // '{'
+
+        for (FluxParser.StatementContext stmt : statements) {
+            voidBlock.addChild(stmt);
+            stmt.parent = voidBlock;
+        }
+
+        voidBlock.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__4, "}"))); // '}'
+
+        mainFunc.addChild(voidBlock);
+        funcDecl.addChild(mainFunc);
+        declCtx.addChild(funcDecl);
+
+        if (parent.children == null) {
+            parent.addChild(declCtx);
+        } else {
+            parent.children.add(declCtx);
+        }
+
+        return declCtx;
     }
 
     @Override
@@ -76,6 +132,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitAddSubExpr(FluxParser.AddSubExprContext ctx) {
         return String.format("%s %s %s", visit(ctx.expression(0)), ctx.operator.getText(), visit(ctx.expression(1)));
+    }
+
+    @Override
+    public String visitQualifiedId(QualifiedIdContext ctx) {
+        return ctx.getText();
     }
 
     @Override
@@ -174,11 +235,13 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         var varDecl = getToClosestParent(ctx, FluxParser.VarDeclContext.class);
         if (varDecl != null) {
-            type = convertType(varDecl.type().getText());
+            type = convertType(varDecl.localVarDecl().type().getText());
         }
         var assignmentStat = getToClosestParent(ctx, FluxParser.AssignmentStatContext.class);
         if (assignmentStat != null) {
-            var declaration = getDeclaration(assignmentStat.qualifiedId().getText(), ctx);
+            var assignment = getAssignment(assignmentStat);
+
+            var declaration = getDeclaration(assignment.qualifiedId.getText(), ctx);
             if (declaration != null) {
                 type = convertType(declaration.type);
             }
@@ -258,11 +321,20 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
     }
 
+    public Declaration simplifyDeclaration(LocalVarDeclContext ctx) {
+        if (ctx != null) {
+            var globalDecl = ctx;
+
+            return new Declaration(convertType(globalDecl.type().getText()), globalDecl.ID().getText(), globalDecl, "var");
+        }
+        return null;
+    }
+
     public Declaration simplifyDeclaration(DeclarationContext ctx) {
         if (ctx.varDecl() != null) {
             var globalDecl = ctx.varDecl();
 
-            return new Declaration(convertType(globalDecl.type().getText()), globalDecl.ID().getText(), globalDecl, "var");
+            return new Declaration(convertType(globalDecl.localVarDecl().type().getText()), globalDecl.localVarDecl().ID().getText(), globalDecl, "var");
         }
         else if (ctx.functionDecl() != null) {
             return simplifyDeclaration(ctx.functionDecl());
@@ -271,8 +343,8 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public Declaration simplifyDeclaration(VarDeclContext ctx) {
-        String declType = ctx.type().getText();
-        String declId = ctx.ID().getText();
+        String declType = ctx.localVarDecl().type().getText();
+        String declId = ctx.localVarDecl().ID().getText();
 
         return new Declaration(declType, declId, ctx, "function");
     }
@@ -285,21 +357,6 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public Declaration getDeclaration(String id, ParseTree ctx) {
-        var siblings = getToSiblingsOfType(ctx, FluxParser.DeclarationContext.class);
-
-        if (!siblings.isEmpty()) {
-            for (var sibling : siblings) {
-                var myDeclaration = simplifyDeclaration(sibling);
-
-                if (myDeclaration != null) {
-                    if (id.equals(myDeclaration.id)) {
-                        String type = convertType(myDeclaration.type);
-
-                        return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
-                    }
-                }
-            }
-        }
 
         var funcSiblings = getToSiblingsOfType(ctx, FluxParser.FunctionDeclStatementContext.class);
 
@@ -332,6 +389,23 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                 }
             }
         }
+
+        var siblings = getToSiblingsOfType(ctx, FluxParser.DeclarationContext.class);
+
+        if (!siblings.isEmpty()) {
+            for (var sibling : siblings) {
+                var myDeclaration = simplifyDeclaration(sibling);
+
+                if (myDeclaration != null) {
+                    if (id.equals(myDeclaration.id)) {
+                        String type = convertType(myDeclaration.type);
+
+                        return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
+                    }
+                }
+            }
+        }
+
         return null;
     }
 
@@ -347,16 +421,66 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitExpExpr(FluxParser.ExpExprContext ctx) {
+        return visitExp(ctx.expression(0), ctx.expression(1), ctx);
+    }
+
+    public String visitExp(Object exp1, Object exp2, ParseTree ctx) {
+        return visitBinaryOp(exp1, exp2, ctx,
+                (e1, e2) -> String.format("Math.pow(%s, %s)", e1, e2));
+    }
+
+    @Override
+    public String visitFloorDivExpr(FloorDivExprContext ctx) {
+        return visitFloorDiv(ctx.expression(0), ctx.expression(1), ctx);
+    }
+
+    public String visitFloorDiv(Object exp1, Object exp2, ParseTree ctx) {
+        return visitBinaryOp(exp1, exp2, ctx,
+                (e1, e2) -> String.format("Math.floor(%s / %s)", e1, e2));
+    }
+
+    @Override
+    public String visitCeilDivExpr(CeilDivExprContext ctx) {
+        return visitCeilDiv(ctx.expression(0), ctx.expression(1), ctx);
+    }
+
+    public String visitCeilDiv(Object exp1, Object exp2, ParseTree ctx) {
+        return visitBinaryOp(exp1, exp2, ctx,
+                (e1, e2) -> String.format("Math.ceil(%s / %s)", e1, e2));
+    }
+
+    public String getCastString(ParseTree ctx, Object... expressions) {
         String castString = "";
-        for (var expression : ctx.expression()) {
+        for (var expression : expressions) {
+            if (expression instanceof String) {
+                continue;
+            }
+
+            QualifiedIdContext qualifiedId = null;
             if (expression instanceof IdExprContext idExpr) {
-                var declaration = getDeclaration(idExpr.qualifiedId().getText(), ctx);
+                qualifiedId = idExpr.qualifiedId();
+            } else if (expression instanceof QualifiedIdContext idExpr) {
+                qualifiedId = idExpr;
+            }
+
+            if (qualifiedId != null) {
+                var declaration = getDeclaration(qualifiedId.getText(), ctx);
                 if (declaration != null && !declaration.type.equals("double")) {
                     castString = String.format("(%s) ", declaration.type);
                 }
             }
         }
-        return String.format("%sMath.pow(%s, %s)", castString, visit(ctx.expression(0)), visit(ctx.expression(1)));
+        return castString;
+    }
+
+    private String visitBinaryOp(Object exp1, Object exp2, ParseTree ctx, BiFunction<String, String, String> formatter) {
+        String str1 = (exp1 instanceof String s) ? s : (exp1 instanceof ParseTree t) ? visit(t) : null;
+        String str2 = (exp2 instanceof String s) ? s : (exp2 instanceof ParseTree t) ? visit(t) : null;
+
+        if (str1 == null || str2 == null) return null;
+
+        String castString = getCastString(ctx, exp1, exp2);
+        return castString + formatter.apply(str1, str2);
     }
 
     @Override
@@ -376,6 +500,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitStringExpr(StringExprContext ctx) {
+        return ctx.getText();
+    }
+
+    @Override
+    public String visitCharExpr(CharExprContext ctx) {
         return ctx.getText();
     }
 
@@ -406,11 +535,6 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
-    public String visitParenthesizedStatement(ParenthesizedStatementContext ctx) {
-        return visit(ctx.statement());
-    }
-
-    @Override
     public String visitVarDeclStatement(FluxParser.VarDeclStatementContext ctx) {
         return visitVarDecl(ctx.varDecl());
     }
@@ -421,6 +545,12 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         string += visit(ctx.expression()) + ")";
         string += visit(ctx.block(0)) + "\n";
         return string;
+    }
+
+    @Override
+    public String visitForStatement(ForStatementContext ctx) {
+        Print(ctx);
+        return String.format("for (%s; %s; %s) %s", visit(ctx.localVarDecl()), visit(ctx.expression()), visit(ctx.assignmentStat()), visit(ctx.block()));
     }
 
     @Override
@@ -535,6 +665,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
+    public String visitUnaryAssigmnent(UnaryAssigmnentContext ctx) {
+        return String.format("%s%s", ctx.qualifiedId().getText(), ctx.operator.getText());
+    }
+
+    @Override
     public String visitExpressionReturnStatement(ExpressionReturnStatementContext ctx) {
         return "return " + visit(ctx.expressionReturn().expression()) + ";";
     }
@@ -552,10 +687,60 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitAssignmentStatement(FluxParser.AssignmentStatementContext ctx) {
-        if (ctx.assignmentStat().expression(1) != null) {
-            return String.format("%s[%s] = %s;", ctx.assignmentStat().qualifiedId().getText(), visit(ctx.assignmentStat().expression(1)), visit(ctx.assignmentStat().expression(0)));
+        var assignment = getAssignment(ctx);
+
+        if (assignment != null) {
+            if (assignment.assignmentType.equals("default")) {
+                String idString = assignment.qualifiedId.getText();
+
+                return String.format("%s %s %s;", idString, assignment.operator, visit(assignment.expression));
+            }
+            else if (assignment.assignmentType.equals("exp")) {
+                String idString = assignment.qualifiedId.getText();
+
+                return String.format("%s = %s;", idString, visitExp(assignment.qualifiedId, assignment.expression, ctx));
+            }
+            else if (assignment.assignmentType.equals("floorDiv")) {
+                String idString = assignment.qualifiedId.getText();
+
+                return String.format("%s = %s;", idString, visitExp(assignment.qualifiedId, assignment.expression, ctx));
+            }
         }
-        else return String.format("%s = %s;", ctx.assignmentStat().qualifiedId().getText(), visit(ctx.assignmentStat().expression(0)));
+        return "";
+    }
+
+    public Assignment getAssignment(FluxParser.AssignmentStatContext ctx) {
+        if (ctx instanceof DefaultAssigmnentContext assignment) {
+            return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "default");
+        }
+        else if (ctx instanceof ExpAssigmnentContext assignment) {
+            return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "exp");
+        }
+        else if (ctx instanceof FloorDivAssigmnentContext assignment) {
+            return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "floorDiv");
+        }
+        else if (ctx instanceof CeilDivAssigmnentContext assignment) {
+            return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "ceilDiv");
+        }
+        return null;
+    }
+    public Assignment getAssignment(FluxParser.AssignmentStatementContext ctx) {
+        return getAssignment(ctx.assignmentStat());
+    }
+
+    public class Assignment {
+        public QualifiedIdContext qualifiedId;
+        public String assignmentType;
+
+        public ExpressionContext expression;
+        public String operator;
+
+        public Assignment(QualifiedIdContext qualifiedId, ExpressionContext expression, Token operator, String assignmentType) {
+            this.qualifiedId = qualifiedId;
+            this.assignmentType = assignmentType;
+            this.expression = expression;
+            this.operator = operator.getText();
+        }
     }
 
     @Override
@@ -565,10 +750,18 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitVarDecl(FluxParser.VarDeclContext ctx) {
+        String variableModifiers = parseVariableModifiers(ctx.variableModifiers());
+        return visitVar(ctx.localVarDecl(), variableModifiers) + ";";
+    }
+    @Override
+    public String visitLocalVarDecl(LocalVarDeclContext ctx) {
+        return visitVar(ctx, "");
+    }
+
+    public String visitVar(LocalVarDeclContext ctx, String variableModifiers) {
         String type = convertType(ctx.type().getText());
         String id = ctx.ID().getText();
 
-        String variableModifiers = parseVariableModifiers(ctx.variableModifiers());
         StringBuilder statementBuilder = new StringBuilder();
 
         if (ctx.expression() != null) {
@@ -578,7 +771,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             }
             pendingAssertions.clear();
 
-            statementBuilder.append(String.format("%s%s %s = %s;", variableModifiers, type, id, expressionValue));
+            statementBuilder.append(String.format("%s%s %s = %s", variableModifiers, type, id, expressionValue));
 
         }  else {
             for (String assertion : pendingAssertions) {
@@ -586,7 +779,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             }
             pendingAssertions.clear();
 
-            statementBuilder.append(String.format("%s%s %s;", variableModifiers, type, id));
+            statementBuilder.append(String.format("%s%s %s", variableModifiers, type, id));
         }
         return statementBuilder.toString();
     }

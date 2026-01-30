@@ -58,6 +58,16 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitAccessModifier(FluxParser.AccessModifierContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link FluxParser#unfinishedMd}.
+	 * @param ctx the parse tree
+	 */
+	void enterUnfinishedMd(FluxParser.UnfinishedMdContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#unfinishedMd}.
+	 * @param ctx the parse tree
+	 */
+	void exitUnfinishedMd(FluxParser.UnfinishedMdContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link FluxParser#implementationModifier}.
 	 * @param ctx the parse tree
 	 */
@@ -157,6 +167,16 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitVariableModifiers(FluxParser.VariableModifiersContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 */
+	void enterLocalVarDecl(FluxParser.LocalVarDeclContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 */
+	void exitLocalVarDecl(FluxParser.LocalVarDeclContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FluxParser#varDecl}.
 	 * @param ctx the parse tree
@@ -286,17 +306,17 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitVoidReturn(FluxParser.VoidReturnContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code ParenthesizedStatement}
+	 * Enter a parse tree produced by the {@code FunctionDeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterParenthesizedStatement(FluxParser.ParenthesizedStatementContext ctx);
+	void enterFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code ParenthesizedStatement}
+	 * Exit a parse tree produced by the {@code FunctionDeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitParenthesizedStatement(FluxParser.ParenthesizedStatementContext ctx);
+	void exitFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code VoidBlockStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
@@ -310,29 +330,29 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitVoidBlockStatement(FluxParser.VoidBlockStatementContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code ReturnBlockStatement}
+	 * Enter a parse tree produced by the {@code ForStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterReturnBlockStatement(FluxParser.ReturnBlockStatementContext ctx);
+	void enterForStatement(FluxParser.ForStatementContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code ReturnBlockStatement}
+	 * Exit a parse tree produced by the {@code ForStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitReturnBlockStatement(FluxParser.ReturnBlockStatementContext ctx);
+	void exitForStatement(FluxParser.ForStatementContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code VarDeclStatement}
+	 * Enter a parse tree produced by the {@code ForeachStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterVarDeclStatement(FluxParser.VarDeclStatementContext ctx);
+	void enterForeachStatement(FluxParser.ForeachStatementContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code VarDeclStatement}
+	 * Exit a parse tree produced by the {@code ForeachStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitVarDeclStatement(FluxParser.VarDeclStatementContext ctx);
+	void exitForeachStatement(FluxParser.ForeachStatementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code IfStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
@@ -346,41 +366,17 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitIfStatement(FluxParser.IfStatementContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code ExpressionReturnStatement}
+	 * Enter a parse tree produced by the {@code VarDeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterExpressionReturnStatement(FluxParser.ExpressionReturnStatementContext ctx);
+	void enterVarDeclStatement(FluxParser.VarDeclStatementContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code ExpressionReturnStatement}
+	 * Exit a parse tree produced by the {@code VarDeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitExpressionReturnStatement(FluxParser.ExpressionReturnStatementContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code VoidReturnStatement}
-	 * labeled alternative in {@link FluxParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void enterVoidReturnStatement(FluxParser.VoidReturnStatementContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code VoidReturnStatement}
-	 * labeled alternative in {@link FluxParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void exitVoidReturnStatement(FluxParser.VoidReturnStatementContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code FunctionDeclStatement}
-	 * labeled alternative in {@link FluxParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void enterFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code FunctionDeclStatement}
-	 * labeled alternative in {@link FluxParser#statement}.
-	 * @param ctx the parse tree
-	 */
-	void exitFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx);
+	void exitVarDeclStatement(FluxParser.VarDeclStatementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code AssignmentStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
@@ -406,15 +402,89 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitExpressionStatement(FluxParser.ExpressionStatementContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link FluxParser#assignmentStat}.
+	 * Enter a parse tree produced by the {@code ExpressionReturnStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterAssignmentStat(FluxParser.AssignmentStatContext ctx);
+	void enterExpressionReturnStatement(FluxParser.ExpressionReturnStatementContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link FluxParser#assignmentStat}.
+	 * Exit a parse tree produced by the {@code ExpressionReturnStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitAssignmentStat(FluxParser.AssignmentStatContext ctx);
+	void exitExpressionReturnStatement(FluxParser.ExpressionReturnStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code VoidReturnStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterVoidReturnStatement(FluxParser.VoidReturnStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code VoidReturnStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitVoidReturnStatement(FluxParser.VoidReturnStatementContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code DefaultAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void enterDefaultAssigmnent(FluxParser.DefaultAssigmnentContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code DefaultAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void exitDefaultAssigmnent(FluxParser.DefaultAssigmnentContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code ExpAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpAssigmnent(FluxParser.ExpAssigmnentContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ExpAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpAssigmnent(FluxParser.ExpAssigmnentContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code FloorDivAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void enterFloorDivAssigmnent(FluxParser.FloorDivAssigmnentContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code FloorDivAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void exitFloorDivAssigmnent(FluxParser.FloorDivAssigmnentContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code CeilDivAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void enterCeilDivAssigmnent(FluxParser.CeilDivAssigmnentContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code CeilDivAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void exitCeilDivAssigmnent(FluxParser.CeilDivAssigmnentContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code UnaryAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void enterUnaryAssigmnent(FluxParser.UnaryAssigmnentContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code UnaryAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void exitUnaryAssigmnent(FluxParser.UnaryAssigmnentContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code BoolExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -512,6 +582,18 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitEqualityExpr(FluxParser.EqualityExprContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code FloorDivExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterFloorDivExpr(FluxParser.FloorDivExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code FloorDivExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitFloorDivExpr(FluxParser.FloorDivExprContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code CastExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
@@ -523,6 +605,18 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitCastExpr(FluxParser.CastExprContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code CeilDivExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterCeilDivExpr(FluxParser.CeilDivExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code CeilDivExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitCeilDivExpr(FluxParser.CeilDivExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code BitwiseXORExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -655,6 +749,18 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitDecimalExpr(FluxParser.DecimalExprContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code CharExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterCharExpr(FluxParser.CharExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code CharExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitCharExpr(FluxParser.CharExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code FunctionCallExpr}
 	 * labeled alternative in {@link FluxParser#expression}.

@@ -1,6 +1,6 @@
 grammar Flux;
 
-program:   terminator? (declaration | terminator)* EOF ;
+program:    (declaration | statement | terminator)* EOF ;
 
 declaration
     :   importDecl terminator
@@ -8,11 +8,12 @@ declaration
     |   varDecl terminator
     ;
 
-type:   'float' | 'double' | 'int' | 'bool' | 'string' | 'void' | qualifiedId ;
+type:   'float' | 'double' | 'int' | 'bool' | 'string' | qualifiedId ;
 
 terminator : TERMINATOR+ ;
 
 accessModifier : 'public' | 'protected' | 'private' ;
+unfinishedMd : 'unfinished' ;
 implementationModifier : 'abstract' | 'static' | 'native' ;
 staticMd : 'static' ;
 finalMd : 'final' ;
@@ -30,19 +31,25 @@ importDecl
 variableModifiers
     :
     accessModifier?
+    unfinishedMd?
     staticMd?
     finalMd?
     transientMd?
     volatileMd?
     ;
 
+localVarDecl
+    :   type ID ('=' expression)?
+    ;
+
 varDecl
-    :   variableModifiers type ID ('=' expression)?
+    :   variableModifiers localVarDecl
     ;
 
 functionModifiers
     :
     accessModifier?
+    unfinishedMd?
     implementationModifier?
     finalMd?
     transientMd?
@@ -54,7 +61,7 @@ functionModifiers
 
 functionDecl
     :   functionModifiers
-        'void' ID '(' formalParameters? ')' voidBlock           # RunnableFunctionDecl
+        VOID ID '(' formalParameters? ')' voidBlock             # RunnableFunctionDecl
     |   functionModifiers
         type ID '(' formalParameters? ')' returnBlock           # ConsumerFunctionDecl
     ;
@@ -68,32 +75,40 @@ formalParameter
     ;
 
 // TODO allow for statements to not need the last terminator (ex. string NewFunc(string str) { return str.repeat(7); System.out.println(wow) } )
-voidBlock : '{' (statement | terminator)* voidReturn* '}' ;
-returnBlock : '{' (statement | terminator)* expressionReturn* '}' ;
+voidBlock : FIGURE_BRACKET_L (statement | terminator)* voidReturn* FIGURE_BRACKET_R ;
+returnBlock : FIGURE_BRACKET_L (statement | terminator)* expressionReturn* FIGURE_BRACKET_R ;
 
 block
     :   returnBlock                                             # ReturnBlockOption
     |   voidBlock                                               # VoidBlockOption
     ;
 
-expressionReturn : 'return' expression terminator? ;
-voidReturn : 'return' terminator? ;
+expressionReturn : 'return' expression terminator ;
+voidReturn : 'return' terminator ;
 
 statement
-    :   '(' statement ')'                                       # ParenthesizedStatement
+    :   functionDecl                                            # FunctionDeclStatement
     |   voidBlock                                               # VoidBlockStatement
-    |   returnBlock                                             # ReturnBlockStatement
-    |   varDecl terminator                                      # VarDeclStatement
+    |   'for' '(' localVarDecl terminator expression terminator assignmentStat ')' block # ForStatement
+    |   'for' '(' type ID ':' expression ')' block              # ForeachStatement
     |   'if' '(' expression ')' block ('else' block)?           # IfStatement
-    |   expressionReturn                                        # ExpressionReturnStatement
-    |   voidReturn                                              # VoidReturnStatement
-    |   functionDecl                                            # FunctionDeclStatement
+    |   varDecl terminator                                      # VarDeclStatement
     |   assignmentStat terminator                               # AssignmentStatement
     |   expression terminator                                   # ExpressionStatement
+    |   expressionReturn                                        # ExpressionReturnStatement
+    |   voidReturn                                              # VoidReturnStatement
     ;
 
 assignmentStat
-    :   qualifiedId ('[' expression ']')? '=' expression
+    :   qualifiedId operator=
+    ( '='   | '+='  | '-='  | '*='
+    | '/='  | '%='  | '&='  | '^='
+    | '|='  | '<<=' | '>>=' | '>>>='
+    ) expression                                                # DefaultAssigmnent
+    |   qualifiedId operator='**=' expression                   # ExpAssigmnent
+    |   qualifiedId operator='/%=' expression                   # FloorDivAssigmnent
+    |   qualifiedId operator='%/=' expression                   # CeilDivAssigmnent
+    |   qualifiedId operator=('++' | '--')                      # UnaryAssigmnent
     ;
 
 expression
@@ -105,6 +120,8 @@ expression
     |   operator=('++' | '--' | '+' | '-' | '~') expression     # UnaryExpr
     |   ('!' expression | 'not' '(' expression ')')             # NotExpr
     |   expression operator=('*' | '/' | '%') expression        # MulDivExpr
+    |   expression operator='/%' expression                     # FloorDivExpr
+    |   expression operator='%/' expression                     # CeilDivExpr
     |   expression operator=('+' | '-') expression              # AddSubExpr
     |   expression operator=('<<' | '>>' | '>>>') expression    # ShiftExpr
     |   expression operator=('<' | '>' | '<=' | '>=' | 'instanceof') expression  # RelationalExpr
@@ -123,19 +140,38 @@ expression
     |   DECIMAL                                                 # DecimalExpr
     |   BOOL                                                    # BoolExpr
     |   STRING                                                  # StringExpr
+    |   CHAR                                                    # CharExpr
     ;
 
 expressionList : expression (',' expression)* ;
 
-TERMINATOR : ';' | ( '\r'? '\n' )+ ;
+CHAR : '\'' ( ESC_SEQ | ~[\\\r\n'] ) '\'' ;
+
+STRING
+    : '"'  ( ESC_SEQ | ~[\\\r\n"] )* '"'
+    | '\'' ( ESC_SEQ | ~[\\\r\n'] )* '\''
+    ;
+
+fragment ESC_SEQ
+    : '\\' [btnfr"'\\]
+    | '\\' 'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
+    ;
+
+fragment HEX_DIGIT : [0-9a-fA-F] ;
+
 INT :   [0-9]+ ;
 DECIMAL : [0-9]+ '.' [0-9]+ ('f' | 'F' | 'd' | 'D')? ;
 BOOL : ('true' | 'false') ;
-STRING : '"' ( '\\' . | ~[\\\r\n"] )* '"' ;
+VOID : 'void' ;
 WILDCARD : '.*' ;
+
+ // Added these two bad boys because it's funny
+FIGURE_BRACKET_L : '<%' | '{' ;
+FIGURE_BRACKET_R : '%>' | '}' ;
 
 ID  :   SYMBOL (SYMBOL | [0-9])* ;
 SYMBOL : (LETTER | '_') ;
+TERMINATOR : ';' | ( '\r'? '\n' ) ;
 qualifiedId : ID ('.' ID)* ;
 
 fragment LETTER : [a-zA-Zа-яА-Я] ;
