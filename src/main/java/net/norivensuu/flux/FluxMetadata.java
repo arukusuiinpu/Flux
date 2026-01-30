@@ -29,6 +29,7 @@ public class FluxMetadata {
         var meta = new FluxMetadata(top, imports);
         meta.imports.add("java.util.*");
         meta.imports.add("java.io.*");
+        meta.imports.add("static net.norivensuu.flux.utils.FluxUtils.*");
         return meta;
     }
 

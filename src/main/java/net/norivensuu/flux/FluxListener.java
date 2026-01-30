@@ -450,6 +450,18 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitExpAssigmnent(FluxParser.ExpAssigmnentContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code TetrAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void enterTetrAssigmnent(FluxParser.TetrAssigmnentContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code TetrAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 */
+	void exitTetrAssigmnent(FluxParser.TetrAssigmnentContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code FloorDivAssigmnent}
 	 * labeled alternative in {@link FluxParser#assignmentStat}.
 	 * @param ctx the parse tree
@@ -809,6 +821,18 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitLogicalANDExpr(FluxParser.LogicalANDExprContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code TetrExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterTetrExpr(FluxParser.TetrExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code TetrExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitTetrExpr(FluxParser.TetrExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code ParenthesizedExpr}
 	 * labeled alternative in {@link FluxParser#expression}.

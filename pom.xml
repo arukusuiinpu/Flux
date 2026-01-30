@@ -23,6 +23,12 @@
       <version>2.13.1</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apfloat</groupId>
+      <artifactId>apfloat</artifactId>
+      <version>1.14.0</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <build>

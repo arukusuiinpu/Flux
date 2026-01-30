@@ -27,6 +27,25 @@ public class FluxCompiler {
     private static final Path PROJECT_METADATA = PROJECT_ROOT.resolve("inherited.flux");
 
     private static Map<Path, FluxMetadata> metadataRegistry = new HashMap<>();
+    private static Map<FluxParser.ProgramContext, Program> programRegistry = new HashMap<>();
+
+    public static Map<FluxParser.ProgramContext, Program> getProgramRegistry() {
+        return programRegistry;
+    }
+
+    public static class Program {
+        public Set<String> imports = new HashSet<>();
+        public FluxParser.ProgramContext ctx;
+        public JavaCodeGeneratorVisitor.JavaCode javaCode;
+
+        public Program(FluxParser.ProgramContext ctx) {
+            this.ctx = ctx;
+        }
+
+        public FluxParser.DeclarationContext addImport(String importPath) {
+            return FluxCompiler.addImport(importPath, ctx);
+        }
+    }
 
     static void main(String[] args) throws IOException {
         System.out.println("Starting compilation of project: " + PROJECT_ROOT);
@@ -79,52 +98,64 @@ public class FluxCompiler {
 
         FluxParser.ProgramContext tree = parser.program();
 
+        var program = new Program(tree);
+        programRegistry.put(tree, program);
+
         if (metadata != null && metadata.imports != null) {
-            Set<String> existingImports = new HashSet<>();
             if (tree.children != null) {
                 for (ParseTree child : tree.children) {
                     if (child instanceof FluxParser.DeclarationContext decl) {
                         if (decl.importDecl() != null && decl.importDecl().qualifiedId() != null) {
-                            existingImports.add(decl.importDecl().qualifiedId().getText() + (decl.importDecl().wildcard != null ? decl.importDecl().wildcard.getText() : ".*"));
+                            program.imports.add(decl.importDecl().qualifiedId().getText() + (decl.importDecl().wildcard != null ? decl.importDecl().wildcard.getText() : ".*"));
                         }
                     }
                 }
             }
 
             for (String importPath : metadata.imports) {
-                if (existingImports.contains(importPath)) {
+                if (program.imports.contains(importPath)) {
                     continue;
                 }
 
-                FluxParser.DeclarationContext declarationContext = new FluxParser.DeclarationContext(tree, -1);
-                FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(declarationContext, -1);
-
-                //TODO Fix every anonymous token!
-                syntheticImport.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "import ")));
-
-                FluxParser.QualifiedIdContext qualIdCtx = new FluxParser.QualifiedIdContext(syntheticImport, -1);
-                qualIdCtx.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.ID, importPath)));
-                syntheticImport.addAnyChild(qualIdCtx);
-
-                Token wildcardToken = new CommonToken(FluxLexer.WILDCARD, ".*");
-                syntheticImport.addAnyChild(new TerminalNodeImpl(wildcardToken));
-
-                FluxParser.TerminatorContext terminator = new FluxParser.TerminatorContext(declarationContext, -1);
-                terminator.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.TERMINATOR, ";")));
-
-                declarationContext.addAnyChild(syntheticImport);
-                declarationContext.addAnyChild(terminator);
-
-                if (tree.children == null) {
-                    tree.addAnyChild(declarationContext);
-                } else {
-                    tree.children.addFirst(declarationContext);
-                }
-                declarationContext.parent = tree;
+                addImport(importPath, tree);
             }
         }
 
         return tree;
+    }
+
+    public static FluxParser.DeclarationContext addImport(String importPath, FluxParser.ProgramContext tree) {
+        var program = programRegistry.get(tree);
+
+        FluxParser.DeclarationContext declarationContext = new FluxParser.DeclarationContext(tree, -1);
+        FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(declarationContext, -1);
+
+        //TODO Fix every anonymous token!
+        syntheticImport.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "import ")));
+
+        FluxParser.QualifiedIdContext qualIdCtx = new FluxParser.QualifiedIdContext(syntheticImport, -1);
+        qualIdCtx.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.ID, importPath)));
+        syntheticImport.addAnyChild(qualIdCtx);
+
+        Token wildcardToken = new CommonToken(FluxLexer.WILDCARD, ".*");
+        syntheticImport.addAnyChild(new TerminalNodeImpl(wildcardToken));
+
+        FluxParser.TerminatorContext terminator = new FluxParser.TerminatorContext(declarationContext, -1);
+        terminator.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.TERMINATOR, ";")));
+
+        declarationContext.addAnyChild(syntheticImport);
+        declarationContext.addAnyChild(terminator);
+
+        if (tree.children == null) {
+            tree.addAnyChild(declarationContext);
+        } else {
+            tree.children.addFirst(declarationContext);
+        }
+        declarationContext.parent = tree;
+
+        program.imports.add(importPath);
+
+        return declarationContext;
     }
 
     private static FluxMetadata buildClosestMetadata(Path directory) {

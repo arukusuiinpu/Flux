@@ -273,6 +273,13 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpAssigmnent(FluxParser.ExpAssigmnentContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code TetrAssigmnent}
+	 * labeled alternative in {@link FluxParser#assignmentStat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTetrAssigmnent(FluxParser.TetrAssigmnentContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code FloorDivAssigmnent}
 	 * labeled alternative in {@link FluxParser#assignmentStat}.
 	 * @param ctx the parse tree
@@ -482,6 +489,13 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitLogicalANDExpr(FluxParser.LogicalANDExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code TetrExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTetrExpr(FluxParser.TetrExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ParenthesizedExpr}
 	 * labeled alternative in {@link FluxParser#expression}.

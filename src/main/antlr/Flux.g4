@@ -74,7 +74,8 @@ formalParameter
     :   type ID
     ;
 
-// TODO allow for statements to not need the last terminator (ex. string NewFunc(string str) { return str.repeat(7); System.out.println(wow) } )
+// TODO allow for statements to not need the last terminator
+//  (ex. string NewFunc(string str) { return str.repeat(7); System.out.println(wow) } )
 voidBlock : FIGURE_BRACKET_L (statement | terminator)* voidReturn* FIGURE_BRACKET_R ;
 returnBlock : FIGURE_BRACKET_L (statement | terminator)* expressionReturn* FIGURE_BRACKET_R ;
 
@@ -106,6 +107,7 @@ assignmentStat
     | '|='  | '<<=' | '>>=' | '>>>='
     ) expression                                                # DefaultAssigmnent
     |   qualifiedId operator='**=' expression                   # ExpAssigmnent
+    |   qualifiedId operator='***=' expression                  # TetrAssigmnent
     |   qualifiedId operator='/%=' expression                   # FloorDivAssigmnent
     |   qualifiedId operator='%/=' expression                   # CeilDivAssigmnent
     |   qualifiedId operator=('++' | '--')                      # UnaryAssigmnent
@@ -116,7 +118,12 @@ expression
     |   '[' expressionList? ']'                                 # ArrayExpr // TODO Implement
     |   expression operator=('++' | '--')                       # PostfixExpr
     |   '(' type ')' expression                                 # CastExpr
-    |   expression '**' expression                              # ExpExpr
+    |   expression ('**' | '^') expression                      # ExpExpr
+
+    // Please don't ask me about tetration, it only got here because it needed
+    // a custom way of handling it, useful for many other future features
+    |   expression ('***' | '^^') expression                    # TetrExpr
+
     |   operator=('++' | '--' | '+' | '-' | '~') expression     # UnaryExpr
     |   ('!' expression | 'not' '(' expression ')')             # NotExpr
     |   expression operator=('*' | '/' | '%') expression        # MulDivExpr
@@ -137,6 +144,9 @@ expression
     |   qualifiedId '(' expressionList? ')'                     # FunctionCallExpr
     |   qualifiedId '[' expression ']'                          # ArrayAccessExpr
     |   expression '.' expression                               # VariableAccessExpr
+
+    // All of the expressions below must have an autoType in the
+    // JavaCodeGeneratorVisitor.getAutoType(Object object) function
     |   qualifiedId                                             # IdExpr
     |   INT                                                     # IntExpr
     |   DECIMAL                                                 # DecimalExpr

@@ -22,7 +22,7 @@ _Sorted based on plausibility of quick implementation and urgency._
 ## Example code:
 ```
 import java.lang.* // Inherits Java libraries and importing structure
-using com.google.gson.*; // Or you can use C# if you want
+using org.apfloat.Apfloat // Or you can use C# if you want
 
 float i = 1.0F // Java handles as float
 float j = 1.0 // Same here
@@ -54,24 +54,30 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
     bool k = c < d < m // Chained comparisons are supported
 
     foreach (var element in list) { // Foreach works both in C# format
-        System.out.println(element)
+        Print(element, 'C# foreach') // Custom System.out.println wrapper
     }
 
     for (var element : list) { // And Java format (':' and 'in' are interchangeable for both)
-        System.out.println(element)
+        Print(element, 'Java foreach')
     }
 
     return k
 }
 
 void main() {
+    Print((2.0 *** 5.0).doubleValue()); // Tetration
+
     test = SampleFunction(i, j)
 
     string SampleString(string name) { // Allows nested functions
-        return "Hello, " + name + "!"
+        return String.format("Hello, %s!", name)
     }
 
     string wow = SampleString("random user") + test
+}
+
+unfinished void unfinishedVoid() { // Flux also has a special comment function or variable modifier for unfinished parts of your code
+    unfinished float unfinishedFloat;
 }
 ```
 ## 𓆝𓆟𓆞𓆟𓆞𓆝𓆟𓆞𓆝
