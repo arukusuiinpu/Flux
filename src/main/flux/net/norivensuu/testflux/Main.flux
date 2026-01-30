@@ -18,8 +18,14 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 
     float c = a + b; float d = 3.14 // Both ';' and '\n' serve as terminators
 
-    float m = c ** d // Exponent operator
-    
+    float m1 = c ** d // Exponent operator
+    float m2 = c /% d // Floor Division operator
+    float m3 = c %/ d // Ceil Division operator
+
+    m1 **= 2
+    m2 /%= 2 // These three work the same way as any regular operation assignments
+    m3 %/= 2
+
     List<string> list = new ArrayList() {{ add("element1"); add("element2"); }} // Directly compiles in Java
 
     bool k = c < d < m // Chained comparisons are supported
