@@ -72,6 +72,22 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return javaCode.toString();
     }
 
+    @Override
+    public String visitType(TypeContext ctx) {
+        StringBuilder builder = new StringBuilder();
+        if (!ctx.type().isEmpty()) {
+            builder.append(visit(ctx.type(0))).append("<").append(visit(ctx.type(1))).append(">");
+        }
+        else {
+            if (ctx.qualifiedId() != null)
+                return convertType(visit(ctx.qualifiedId()));
+
+            return convertType(ctx.getText());
+        }
+
+        return builder.toString();
+    }
+
     private FluxParser.DeclarationContext synthesizeMainFunction(List<FluxParser.StatementContext> statements, FluxParser.ProgramContext parent) {
         FluxParser.DeclarationContext declCtx = new FluxParser.DeclarationContext(parent, -1);
 
@@ -215,7 +231,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitCastExpr(FluxParser.CastExprContext ctx) {
-        return String.format("(%s)%s", convertType(ctx.type().getText()), visit(ctx.expression()));
+        return String.format("(%s)%s", visit(ctx.type()), visit(ctx.expression()));
     }
 
     @Override
@@ -235,7 +251,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         var varDecl = getToClosestParent(ctx, FluxParser.VarDeclContext.class);
         if (varDecl != null) {
-            type = convertType(varDecl.localVarDecl().type().getText());
+            type = visit(varDecl.localVarDecl().type());
         }
         var assignmentStat = getToClosestParent(ctx, FluxParser.AssignmentStatContext.class);
         if (assignmentStat != null) {
@@ -325,7 +341,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         if (ctx != null) {
             var globalDecl = ctx;
 
-            return new Declaration(convertType(globalDecl.type().getText()), globalDecl.ID().getText(), globalDecl, "var");
+            return new Declaration(visit(globalDecl.type()), globalDecl.ID().getText(), globalDecl, "var");
         }
         return null;
     }
@@ -334,7 +350,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         if (ctx.varDecl() != null) {
             var globalDecl = ctx.varDecl();
 
-            return new Declaration(convertType(globalDecl.localVarDecl().type().getText()), globalDecl.localVarDecl().ID().getText(), globalDecl, "var");
+            return new Declaration(visit(globalDecl.localVarDecl().type()), globalDecl.localVarDecl().ID().getText(), globalDecl, "var");
         }
         else if (ctx.functionDecl() != null) {
             return simplifyDeclaration(ctx.functionDecl());
@@ -343,14 +359,14 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public Declaration simplifyDeclaration(VarDeclContext ctx) {
-        String declType = ctx.localVarDecl().type().getText();
+        String declType = visit(ctx.localVarDecl().type());
         String declId = ctx.localVarDecl().ID().getText();
 
         return new Declaration(declType, declId, ctx, "function");
     }
 
     public Declaration simplifyDeclaration(FunctionDeclContext ctx) {
-        String declType = ctx instanceof RunnableFunctionDeclContext ? "void" : ((ConsumerFunctionDeclContext) ctx).type().getText();
+        String declType = ctx instanceof RunnableFunctionDeclContext ? "void" : visit(((ConsumerFunctionDeclContext) ctx).type());
         String declId = ctx instanceof RunnableFunctionDeclContext ? ((RunnableFunctionDeclContext) ctx).ID().getText() : ((ConsumerFunctionDeclContext) ctx).ID().getText();
 
         return new Declaration(declType, declId, ctx, "function");
@@ -444,6 +460,33 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return visitCeilDiv(ctx.expression(0), ctx.expression(1), ctx);
     }
 
+    @Override
+    public String visitCreationExpr(CreationExprContext ctx) {
+        String args = "";
+        if (ctx.expressionList() != null) {
+            args = ctx.expressionList().expression().stream()
+                    .map(this::visit)
+                    .collect(Collectors.joining(", "));
+        }
+
+        String block = "";
+        if (ctx.block() != null) {
+            block = visit(ctx.block());
+        }
+
+        String typeString = visit(ctx.type());
+        var declarationContext = getToClosestParent(ctx, VarDeclContext.class);
+        if (declarationContext != null) {
+            var declaration = simplifyDeclaration(declarationContext);
+            var type = declaration.type;
+            if (!type.isEmpty() && ctx.type().type().isEmpty()) {
+                typeString = typeString + "<>";
+            }
+        }
+
+        return String.format("new %s(%s) %s", typeString, args, block);
+    }
+
     public String visitCeilDiv(Object exp1, Object exp2, ParseTree ctx) {
         return visitBinaryOp(exp1, exp2, ctx,
                 (e1, e2) -> String.format("Math.ceil(%s / %s)", e1, e2));
@@ -500,7 +543,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitStringExpr(StringExprContext ctx) {
-        return ctx.getText();
+        return String.format("\"%s\"", ctx.getText().substring(1, ctx.getText().length()-1)).replace("\\'", "'");
     }
 
     @Override
@@ -549,8 +592,19 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitForStatement(ForStatementContext ctx) {
-        Print(ctx);
         return String.format("for (%s; %s; %s) %s", visit(ctx.localVarDecl()), visit(ctx.expression()), visit(ctx.assignmentStat()), visit(ctx.block()));
+    }
+
+    @Override
+    public String visitForeachStatement(ForeachStatementContext ctx) {
+        return String.format("for (%s %s : %s) %s", visit(ctx.type()), visit(ctx.ID()), visit(ctx.expression()), visit(ctx.block()));
+    }
+
+    @Override
+    public String visit(ParseTree ctx) {
+        if (ctx instanceof TerminalNodeImpl terminalNode) return terminalNode.getText();
+
+        return super.visit(ctx);
     }
 
     @Override
@@ -567,7 +621,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitConsumerFunctionDecl(ConsumerFunctionDeclContext ctx) {
         return visitFunction(
-                convertType(ctx.type().getText()),
+                visit(ctx.type()),
                 ctx.ID().getText(),
                 ctx.formalParameters(),
                 ctx.returnBlock(),
@@ -656,7 +710,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public String visitFormalParameter(FluxParser.FormalParameterContext ctx) {
-        return convertType(ctx.type().getText()) + " " + ctx.ID().getText();
+        return visit(ctx.type()) + " " + ctx.ID().getText();
     }
 
     @Override
@@ -759,7 +813,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public String visitVar(LocalVarDeclContext ctx, String variableModifiers) {
-        String type = convertType(ctx.type().getText());
+        String type = visit(ctx.type());
         String id = ctx.ID().getText();
 
         StringBuilder statementBuilder = new StringBuilder();
