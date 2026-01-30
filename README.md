@@ -21,22 +21,39 @@ _Sorted based on plausibility of quick implementation and urgency._
 
 ## Example code:
 ```
+import java.lang.* // Inherits Java libraries and importing structure
+
 float i = 1.0F // Java handles as float
 float j = 1.0 // Same here
 
 double k = 1.0 // Java handles as double
 double m = 1.0d // Same here
 
-private float Calculate(float a, float b) { // Inherits modifiers from Java
+bool test;
+
+private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
     
-    float c = a + b; float d = 10 // Both ; and \n serve as terminators
-    return c + d
+    float c = a + b; float d = 3.14 // Both ; and \n serve as terminators
+
+    float m = c ** d // Exponent operator
     
+    bool k = c < d < m // Chained comparisons are supported
 }
 
 void main() {
-    Calculate(i, j)
+    test = SampleFunction(i, j)
     
+    string SampleString(string name) { // Allows nested functions
+        return "Hello, " + name + "!"
+    }
+
+    string wow = SampleString("random user") + test.toString()
+    
+    System.out.println(wow) // Directly compiles in Java
+}
+```
+## 𓆝𓆟𓆞𓆟𓆞𓆝𓆟𓆞𓆝
+Feel free to contribute if you want!
     string TestString(string name) { // Allows nested functions
         return "Hello, " + name + "!"
     }
