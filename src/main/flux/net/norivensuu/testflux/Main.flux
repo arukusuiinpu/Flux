@@ -10,11 +10,13 @@ bool test;
 
 private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 
-    float c = a + b; float d = 3.14 // Both ; and \n serve as terminators
+    float c = a + b; double d = 3.14 // Both ; and \n serve as terminators
 
-    float m = c ** d // Exponent operator
+    double m = c ** d // Exponent operator
 
     bool k = c < d < m // Chained comparisons are supported
+
+    return k
 }
 
 void main() {
@@ -24,7 +26,7 @@ void main() {
         return "Hello, " + name + "!"
     }
 
-    string wow = SampleString("random user") + test.toString()
+    string wow = SampleString("random user") + test
 
     System.out.println(wow) // Directly compiles in Java
 }

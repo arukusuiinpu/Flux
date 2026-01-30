@@ -1,4 +1,4 @@
-// Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
+// Generated from C:/Users/student/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
 package net.norivensuu.flux;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
@@ -26,7 +26,7 @@ public class FluxParser extends Parser {
 		T__45=46, T__46=47, T__47=48, T__48=49, T__49=50, T__50=51, T__51=52, 
 		T__52=53, T__53=54, T__54=55, T__55=56, T__56=57, T__57=58, T__58=59, 
 		T__59=60, T__60=61, TERMINATOR=62, INT=63, DECIMAL=64, BOOL=65, STRING=66, 
-		SYMBOL=67, WILDCARD=68, ID=69, NL=70, WS=71, SL_COMMENT=72, ML_COMMENT=73;
+		WILDCARD=67, ID=68, SYMBOL=69, NL=70, WS=71, SL_COMMENT=72, ML_COMMENT=73;
 	public static final int
 		RULE_program = 0, RULE_declaration = 1, RULE_type = 2, RULE_terminator = 3, 
 		RULE_accessModifier = 4, RULE_implementationModifier = 5, RULE_staticMd = 6, 
@@ -59,7 +59,7 @@ public class FluxParser extends Parser {
 			"'-'", "'~'", "'!'", "'not'", "'*'", "'/'", "'%'", "'<<'", "'>>'", "'>>>'", 
 			"'<'", "'>'", "'<='", "'>='", "'instanceof'", "'=='", "'!='", "'&'", 
 			"'^'", "'|'", "'&&'", "'and'", "'||'", "'or'", "'?'", "':'", "'.'", null, 
-			null, null, null, null, null, "'.*'"
+			null, null, null, null, "'.*'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -70,8 +70,8 @@ public class FluxParser extends Parser {
 			null, null, null, null, null, null, null, null, null, null, null, null, 
 			null, null, null, null, null, null, null, null, null, null, null, null, 
 			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, "TERMINATOR", "INT", "DECIMAL", "BOOL", "STRING", "SYMBOL", 
-			"WILDCARD", "ID", "NL", "WS", "SL_COMMENT", "ML_COMMENT"
+			null, null, "TERMINATOR", "INT", "DECIMAL", "BOOL", "STRING", "WILDCARD", 
+			"ID", "SYMBOL", "NL", "WS", "SL_COMMENT", "ML_COMMENT"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -3160,7 +3160,7 @@ public class FluxParser extends Parser {
 				setState(316);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (((((_la - 21)) & ~0x3f) == 0 && ((1L << (_la - 21)) & 347445674634497L) != 0)) {
+				if (((((_la - 21)) & ~0x3f) == 0 && ((1L << (_la - 21)) & 206708186279169L) != 0)) {
 					{
 					setState(315);
 					expressionList();
@@ -3782,9 +3782,9 @@ public class FluxParser extends Parser {
 		"\u0000\u0000j\u0013\u0001\u0000\u0000\u0000kl\u0005\u0010\u0000\u0000"+
 		"l\u0015\u0001\u0000\u0000\u0000mn\u0005\f\u0000\u0000n\u0017\u0001\u0000"+
 		"\u0000\u0000op\u0005\u0011\u0000\u0000p\u0019\u0001\u0000\u0000\u0000"+
-		"qr\u0005\u0012\u0000\u0000rt\u0003:\u001d\u0000su\u0005D\u0000\u0000t"+
+		"qr\u0005\u0012\u0000\u0000rt\u0003:\u001d\u0000su\u0005C\u0000\u0000t"+
 		"s\u0001\u0000\u0000\u0000tu\u0001\u0000\u0000\u0000u|\u0001\u0000\u0000"+
-		"\u0000vw\u0005\u0013\u0000\u0000wy\u0003:\u001d\u0000xz\u0005D\u0000\u0000"+
+		"\u0000vw\u0005\u0013\u0000\u0000wy\u0003:\u001d\u0000xz\u0005C\u0000\u0000"+
 		"yx\u0001\u0000\u0000\u0000yz\u0001\u0000\u0000\u0000z|\u0001\u0000\u0000"+
 		"\u0000{q\u0001\u0000\u0000\u0000{v\u0001\u0000\u0000\u0000|\u001b\u0001"+
 		"\u0000\u0000\u0000}\u007f\u0003\b\u0004\u0000~}\u0001\u0000\u0000\u0000"+
@@ -3797,7 +3797,7 @@ public class FluxParser extends Parser {
 		"\u0000\u0000\u0000\u0088\u008a\u0001\u0000\u0000\u0000\u0089\u008b\u0003"+
 		"\u0012\t\u0000\u008a\u0089\u0001\u0000\u0000\u0000\u008a\u008b\u0001\u0000"+
 		"\u0000\u0000\u008b\u001d\u0001\u0000\u0000\u0000\u008c\u008d\u0003\u001c"+
-		"\u000e\u0000\u008d\u008e\u0003\u0004\u0002\u0000\u008e\u0091\u0005E\u0000"+
+		"\u000e\u0000\u008d\u008e\u0003\u0004\u0002\u0000\u008e\u0091\u0005D\u0000"+
 		"\u0000\u008f\u0090\u0005\u0014\u0000\u0000\u0090\u0092\u00036\u001b\u0000"+
 		"\u0091\u008f\u0001\u0000\u0000\u0000\u0091\u0092\u0001\u0000\u0000\u0000"+
 		"\u0092\u001f\u0001\u0000\u0000\u0000\u0093\u0095\u0003\b\u0004\u0000\u0094"+
@@ -3817,12 +3817,12 @@ public class FluxParser extends Parser {
 		"\u0000\u00a8\u00aa\u0003\u0018\f\u0000\u00a9\u00a8\u0001\u0000\u0000\u0000"+
 		"\u00a9\u00aa\u0001\u0000\u0000\u0000\u00aa!\u0001\u0000\u0000\u0000\u00ab"+
 		"\u00ac\u0003 \u0010\u0000\u00ac\u00ad\u0005\u0006\u0000\u0000\u00ad\u00ae"+
-		"\u0005E\u0000\u0000\u00ae\u00b0\u0005\u0015\u0000\u0000\u00af\u00b1\u0003"+
+		"\u0005D\u0000\u0000\u00ae\u00b0\u0005\u0015\u0000\u0000\u00af\u00b1\u0003"+
 		"$\u0012\u0000\u00b0\u00af\u0001\u0000\u0000\u0000\u00b0\u00b1\u0001\u0000"+
 		"\u0000\u0000\u00b1\u00b2\u0001\u0000\u0000\u0000\u00b2\u00b3\u0005\u0016"+
 		"\u0000\u0000\u00b3\u00b4\u0003(\u0014\u0000\u00b4\u00c0\u0001\u0000\u0000"+
 		"\u0000\u00b5\u00b6\u0003 \u0010\u0000\u00b6\u00b7\u0003\u0004\u0002\u0000"+
-		"\u00b7\u00b8\u0005E\u0000\u0000\u00b8\u00ba\u0005\u0015\u0000\u0000\u00b9"+
+		"\u00b7\u00b8\u0005D\u0000\u0000\u00b8\u00ba\u0005\u0015\u0000\u0000\u00b9"+
 		"\u00bb\u0003$\u0012\u0000\u00ba\u00b9\u0001\u0000\u0000\u0000\u00ba\u00bb"+
 		"\u0001\u0000\u0000\u0000\u00bb\u00bc\u0001\u0000\u0000\u0000\u00bc\u00bd"+
 		"\u0005\u0016\u0000\u0000\u00bd\u00be\u0003*\u0015\u0000\u00be\u00c0\u0001"+
@@ -3832,7 +3832,7 @@ public class FluxParser extends Parser {
 		"\u00c4\u00c2\u0001\u0000\u0000\u0000\u00c5\u00c8\u0001\u0000\u0000\u0000"+
 		"\u00c6\u00c4\u0001\u0000\u0000\u0000\u00c6\u00c7\u0001\u0000\u0000\u0000"+
 		"\u00c7%\u0001\u0000\u0000\u0000\u00c8\u00c6\u0001\u0000\u0000\u0000\u00c9"+
-		"\u00ca\u0003\u0004\u0002\u0000\u00ca\u00cb\u0005E\u0000\u0000\u00cb\'"+
+		"\u00ca\u0003\u0004\u0002\u0000\u00ca\u00cb\u0005D\u0000\u0000\u00cb\'"+
 		"\u0001\u0000\u0000\u0000\u00cc\u00d1\u0005\u0018\u0000\u0000\u00cd\u00d0"+
 		"\u00032\u0019\u0000\u00ce\u00d0\u0003\u0006\u0003\u0000\u00cf\u00cd\u0001"+
 		"\u0000\u0000\u0000\u00cf\u00ce\u0001\u0000\u0000\u0000\u00d0\u00d3\u0001"+
@@ -3943,8 +3943,8 @@ public class FluxParser extends Parser {
 		"\u0000\u0000\u017f\u0181\u00036\u001b\u0000\u0180\u017e\u0001\u0000\u0000"+
 		"\u0000\u0181\u0184\u0001\u0000\u0000\u0000\u0182\u0180\u0001\u0000\u0000"+
 		"\u0000\u0182\u0183\u0001\u0000\u0000\u0000\u01839\u0001\u0000\u0000\u0000"+
-		"\u0184\u0182\u0001\u0000\u0000\u0000\u0185\u018a\u0005E\u0000\u0000\u0186"+
-		"\u0187\u0005=\u0000\u0000\u0187\u0189\u0005E\u0000\u0000\u0188\u0186\u0001"+
+		"\u0184\u0182\u0001\u0000\u0000\u0000\u0185\u018a\u0005D\u0000\u0000\u0186"+
+		"\u0187\u0005=\u0000\u0000\u0187\u0189\u0005D\u0000\u0000\u0188\u0186\u0001"+
 		"\u0000\u0000\u0000\u0189\u018c\u0001\u0000\u0000\u0000\u018a\u0188\u0001"+
 		"\u0000\u0000\u0000\u018a\u018b\u0001\u0000\u0000\u0000\u018b;\u0001\u0000"+
 		"\u0000\u0000\u018c\u018a\u0001\u0000\u0000\u0000.=ACOX]ty{~\u0081\u0084"+

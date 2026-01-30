@@ -1,9 +1,12 @@
 import java.io.*;
 import java.util.*;
-String NewFunc(String str) {	class _Class_NewFunc2$550402284 {		String NewFunc2(String str2) {			System.out.println("wooow");			return str.repeat(7);		}
+import java.lang.*;
+float i = 1.0F;
+float j = 1.0f;
+double k = 1.0;
+double m = 1.0d;
+boolean test;
+private boolean SampleFunction(float a, float b) {	float c = a + b;	double d = 3.14;	double m = (float) Math.pow(c, d);	boolean k = c < d && d < m;	return k;}
+void main() {	test = SampleFunction(i, j);	class _Class_SampleString$1497845528 {		String SampleString(String name) {			return "Hello, " + name + "!";		}
     }
-    var _class_NewFunc2$550402284 = new _Class_NewFunc2$550402284();	String hai = _class_NewFunc2$550402284.NewFunc2("hai");	System.out.println("woow");	return hai;}
-String TestString(String name) {	System.out.println("haiiiii");	return name;}
-String wow = TestString("random user");
-String wow2 = TestString("random user2");
-void main() {	System.out.println(wow);	System.out.println(wow2);}
+    var _class_SampleString$1497845528 = new _Class_SampleString$1497845528();	String wow = _class_SampleString$1497845528.SampleString("random user") + test;	System.out.println(wow);}

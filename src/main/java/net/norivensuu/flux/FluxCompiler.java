@@ -38,12 +38,6 @@ public class FluxCompiler {
 
         try (Stream<Path> paths = Files.walk(PROJECT_ROOT)) {
             paths.filter(Files::isRegularFile)
-                    .filter(path -> path.endsWith(".flux"))
-                    .forEach(FluxCompiler::compileFile);
-        }
-
-        try (Stream<Path> paths = Files.walk(PROJECT_ROOT)) {
-            paths.filter(Files::isRegularFile)
                     .forEach(p -> {
                         String fileName = p.toString();
                         if (fileName.endsWith(".flux")) {
@@ -123,7 +117,7 @@ public class FluxCompiler {
                 if (tree.children == null) {
                     tree.addAnyChild(declarationContext);
                 } else {
-                    tree.children.add(0, declarationContext);
+                    tree.children.addFirst(declarationContext);
                 }
                 declarationContext.parent = tree;
             }

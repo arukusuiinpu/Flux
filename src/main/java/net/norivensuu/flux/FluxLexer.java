@@ -1,4 +1,4 @@
-// Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
+// Generated from C:/Users/student/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
 package net.norivensuu.flux;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
@@ -26,7 +26,7 @@ public class FluxLexer extends Lexer {
 		T__45=46, T__46=47, T__47=48, T__48=49, T__49=50, T__50=51, T__51=52, 
 		T__52=53, T__53=54, T__54=55, T__55=56, T__56=57, T__57=58, T__58=59, 
 		T__59=60, T__60=61, TERMINATOR=62, INT=63, DECIMAL=64, BOOL=65, STRING=66, 
-		SYMBOL=67, WILDCARD=68, ID=69, NL=70, WS=71, SL_COMMENT=72, ML_COMMENT=73;
+		WILDCARD=67, ID=68, SYMBOL=69, NL=70, WS=71, SL_COMMENT=72, ML_COMMENT=73;
 	public static String[] channelNames = {
 		"DEFAULT_TOKEN_CHANNEL", "HIDDEN"
 	};
@@ -45,7 +45,7 @@ public class FluxLexer extends Lexer {
 			"T__41", "T__42", "T__43", "T__44", "T__45", "T__46", "T__47", "T__48", 
 			"T__49", "T__50", "T__51", "T__52", "T__53", "T__54", "T__55", "T__56", 
 			"T__57", "T__58", "T__59", "T__60", "TERMINATOR", "INT", "DECIMAL", "BOOL", 
-			"STRING", "SYMBOL", "WILDCARD", "ID", "LETTER", "NL", "WS", "SL_COMMENT", 
+			"STRING", "WILDCARD", "ID", "SYMBOL", "LETTER", "NL", "WS", "SL_COMMENT", 
 			"ML_COMMENT"
 		};
 	}
@@ -61,7 +61,7 @@ public class FluxLexer extends Lexer {
 			"'-'", "'~'", "'!'", "'not'", "'*'", "'/'", "'%'", "'<<'", "'>>'", "'>>>'", 
 			"'<'", "'>'", "'<='", "'>='", "'instanceof'", "'=='", "'!='", "'&'", 
 			"'^'", "'|'", "'&&'", "'and'", "'||'", "'or'", "'?'", "':'", "'.'", null, 
-			null, null, null, null, null, "'.*'"
+			null, null, null, null, "'.*'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -72,8 +72,8 @@ public class FluxLexer extends Lexer {
 			null, null, null, null, null, null, null, null, null, null, null, null, 
 			null, null, null, null, null, null, null, null, null, null, null, null, 
 			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, "TERMINATOR", "INT", "DECIMAL", "BOOL", "STRING", "SYMBOL", 
-			"WILDCARD", "ID", "NL", "WS", "SL_COMMENT", "ML_COMMENT"
+			null, null, "TERMINATOR", "INT", "DECIMAL", "BOOL", "STRING", "WILDCARD", 
+			"ID", "SYMBOL", "NL", "WS", "SL_COMMENT", "ML_COMMENT"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -196,9 +196,9 @@ public class FluxLexer extends Lexer {
 		"\u0001?\u0004?\u01b5\b?\u000b?\f?\u01b6\u0001?\u0001?\u0004?\u01bb\b?"+
 		"\u000b?\f?\u01bc\u0001?\u0003?\u01c0\b?\u0001@\u0001@\u0001@\u0001@\u0001"+
 		"@\u0001@\u0001@\u0001@\u0001@\u0003@\u01cb\b@\u0001A\u0001A\u0001A\u0001"+
-		"A\u0005A\u01d1\bA\nA\fA\u01d4\tA\u0001A\u0001A\u0001B\u0001B\u0003B\u01da"+
-		"\bB\u0001C\u0001C\u0001C\u0001D\u0001D\u0001D\u0005D\u01e2\bD\nD\fD\u01e5"+
-		"\tD\u0001E\u0001E\u0001F\u0003F\u01ea\bF\u0001F\u0001F\u0001G\u0004G\u01ef"+
+		"A\u0005A\u01d1\bA\nA\fA\u01d4\tA\u0001A\u0001A\u0001B\u0001B\u0001B\u0001"+
+		"C\u0001C\u0001C\u0005C\u01de\bC\nC\fC\u01e1\tC\u0001D\u0001D\u0003D\u01e5"+
+		"\bD\u0001E\u0001E\u0001F\u0003F\u01ea\bF\u0001F\u0001F\u0001G\u0004G\u01ef"+
 		"\bG\u000bG\fG\u01f0\u0001G\u0001G\u0001H\u0001H\u0001H\u0001H\u0005H\u01f9"+
 		"\bH\nH\fH\u01fc\tH\u0001H\u0001H\u0001I\u0001I\u0001I\u0001I\u0005I\u0204"+
 		"\bI\nI\fI\u0207\tI\u0001I\u0001I\u0001I\u0001I\u0001I\u0001\u0205\u0000"+
@@ -272,8 +272,8 @@ public class FluxLexer extends Lexer {
 		"\u019d\u0001\u0000\u0000\u0000w\u019f\u0001\u0000\u0000\u0000y\u01a1\u0001"+
 		"\u0000\u0000\u0000{\u01ac\u0001\u0000\u0000\u0000}\u01af\u0001\u0000\u0000"+
 		"\u0000\u007f\u01b4\u0001\u0000\u0000\u0000\u0081\u01ca\u0001\u0000\u0000"+
-		"\u0000\u0083\u01cc\u0001\u0000\u0000\u0000\u0085\u01d9\u0001\u0000\u0000"+
-		"\u0000\u0087\u01db\u0001\u0000\u0000\u0000\u0089\u01de\u0001\u0000\u0000"+
+		"\u0000\u0083\u01cc\u0001\u0000\u0000\u0000\u0085\u01d7\u0001\u0000\u0000"+
+		"\u0000\u0087\u01da\u0001\u0000\u0000\u0000\u0089\u01e4\u0001\u0000\u0000"+
 		"\u0000\u008b\u01e6\u0001\u0000\u0000\u0000\u008d\u01e9\u0001\u0000\u0000"+
 		"\u0000\u008f\u01ee\u0001\u0000\u0000\u0000\u0091\u01f4\u0001\u0000\u0000"+
 		"\u0000\u0093\u01ff\u0001\u0000\u0000\u0000\u0095\u0096\u0005f\u0000\u0000"+
@@ -422,15 +422,15 @@ public class FluxLexer extends Lexer {
 		"\u0000\u0000\u01d1\u01d4\u0001\u0000\u0000\u0000\u01d2\u01d0\u0001\u0000"+
 		"\u0000\u0000\u01d2\u01d3\u0001\u0000\u0000\u0000\u01d3\u01d5\u0001\u0000"+
 		"\u0000\u0000\u01d4\u01d2\u0001\u0000\u0000\u0000\u01d5\u01d6\u0005\"\u0000"+
-		"\u0000\u01d6\u0084\u0001\u0000\u0000\u0000\u01d7\u01da\u0003\u008bE\u0000"+
-		"\u01d8\u01da\u0005_\u0000\u0000\u01d9\u01d7\u0001\u0000\u0000\u0000\u01d9"+
-		"\u01d8\u0001\u0000\u0000\u0000\u01da\u0086\u0001\u0000\u0000\u0000\u01db"+
-		"\u01dc\u0005.\u0000\u0000\u01dc\u01dd\u0005*\u0000\u0000\u01dd\u0088\u0001"+
-		"\u0000\u0000\u0000\u01de\u01e3\u0003\u0085B\u0000\u01df\u01e2\u0003\u0085"+
-		"B\u0000\u01e0\u01e2\u0007\u0000\u0000\u0000\u01e1\u01df\u0001\u0000\u0000"+
-		"\u0000\u01e1\u01e0\u0001\u0000\u0000\u0000\u01e2\u01e5\u0001\u0000\u0000"+
-		"\u0000\u01e3\u01e1\u0001\u0000\u0000\u0000\u01e3\u01e4\u0001\u0000\u0000"+
-		"\u0000\u01e4\u008a\u0001\u0000\u0000\u0000\u01e5\u01e3\u0001\u0000\u0000"+
+		"\u0000\u01d6\u0084\u0001\u0000\u0000\u0000\u01d7\u01d8\u0005.\u0000\u0000"+
+		"\u01d8\u01d9\u0005*\u0000\u0000\u01d9\u0086\u0001\u0000\u0000\u0000\u01da"+
+		"\u01df\u0003\u0089D\u0000\u01db\u01de\u0003\u0089D\u0000\u01dc\u01de\u0007"+
+		"\u0000\u0000\u0000\u01dd\u01db\u0001\u0000\u0000\u0000\u01dd\u01dc\u0001"+
+		"\u0000\u0000\u0000\u01de\u01e1\u0001\u0000\u0000\u0000\u01df\u01dd\u0001"+
+		"\u0000\u0000\u0000\u01df\u01e0\u0001\u0000\u0000\u0000\u01e0\u0088\u0001"+
+		"\u0000\u0000\u0000\u01e1\u01df\u0001\u0000\u0000\u0000\u01e2\u01e5\u0003"+
+		"\u008bE\u0000\u01e3\u01e5\u0005_\u0000\u0000\u01e4\u01e2\u0001\u0000\u0000"+
+		"\u0000\u01e4\u01e3\u0001\u0000\u0000\u0000\u01e5\u008a\u0001\u0000\u0000"+
 		"\u0000\u01e6\u01e7\u0007\u0003\u0000\u0000\u01e7\u008c\u0001\u0000\u0000"+
 		"\u0000\u01e8\u01ea\u0005\r\u0000\u0000\u01e9\u01e8\u0001\u0000\u0000\u0000"+
 		"\u01e9\u01ea\u0001\u0000\u0000\u0000\u01ea\u01eb\u0001\u0000\u0000\u0000"+
@@ -452,7 +452,7 @@ public class FluxLexer extends Lexer {
 		"\u0000\u0000\u0000\u0208\u0209\u0005*\u0000\u0000\u0209\u020a\u0005/\u0000"+
 		"\u0000\u020a\u020b\u0001\u0000\u0000\u0000\u020b\u020c\u0006I\u0001\u0000"+
 		"\u020c\u0094\u0001\u0000\u0000\u0000\u0012\u0000\u01a5\u01aa\u01ac\u01b1"+
-		"\u01b6\u01bc\u01bf\u01ca\u01d0\u01d2\u01d9\u01e1\u01e3\u01e9\u01f0\u01fa"+
+		"\u01b6\u01bc\u01bf\u01ca\u01d0\u01d2\u01dd\u01df\u01e4\u01e9\u01f0\u01fa"+
 		"\u0205\u0002\u0006\u0000\u0000\u0000\u0001\u0000";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());

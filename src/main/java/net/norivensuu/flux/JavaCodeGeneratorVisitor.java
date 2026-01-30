@@ -234,17 +234,20 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     public static class Declaration {
         public String type;
         public String id;
+        public ParseTree declaration;
 
         public String declarationType = "var";
 
-        public Declaration(String type, String id) {
+        public Declaration(String type, String id, ParseTree declaration) {
             this.type = type;
             this.id = id;
+            this.declaration = declaration;
         }
 
-        public Declaration(String type, String id, String declarationType) {
+        public Declaration(String type, String id, ParseTree declaration, String declarationType) {
             this.type = type;
             this.id = id;
+            this.declaration = declaration;
 
             this.declarationType = declarationType;
         }
@@ -259,7 +262,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         if (ctx.varDecl() != null) {
             var globalDecl = ctx.varDecl();
 
-            return new Declaration(convertType(globalDecl.type().getText()), globalDecl.ID().getText(), "var");
+            return new Declaration(convertType(globalDecl.type().getText()), globalDecl.ID().getText(), globalDecl, "var");
         }
         else if (ctx.functionDecl() != null) {
             return simplifyDeclaration(ctx.functionDecl());
@@ -271,14 +274,14 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         String declType = ctx.type().getText();
         String declId = ctx.ID().getText();
 
-        return new Declaration(declType, declId, "function");
+        return new Declaration(declType, declId, ctx, "function");
     }
 
     public Declaration simplifyDeclaration(FunctionDeclContext ctx) {
         String declType = ctx instanceof RunnableFunctionDeclContext ? "void" : ((ConsumerFunctionDeclContext) ctx).type().getText();
         String declId = ctx instanceof RunnableFunctionDeclContext ? ((RunnableFunctionDeclContext) ctx).ID().getText() : ((ConsumerFunctionDeclContext) ctx).ID().getText();
 
-        return new Declaration(declType, declId, "function");
+        return new Declaration(declType, declId, ctx, "function");
     }
 
     public Declaration getDeclaration(String id, ParseTree ctx) {
@@ -292,7 +295,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                     if (id.equals(myDeclaration.id)) {
                         String type = convertType(myDeclaration.type);
 
-                        return new Declaration(type, id, myDeclaration.declarationType);
+                        return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
                     }
                 }
             }
@@ -308,7 +311,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                     if (id.equals(myDeclaration.id)) {
                         String type = convertType(myDeclaration.type);
 
-                        return new Declaration(type, id, myDeclaration.declarationType);
+                        return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
                     }
                 }
             }
@@ -324,7 +327,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                     if (id.equals(myDeclaration.id)) {
                         String type = convertType(myDeclaration.type);
 
-                        return new Declaration(type, id, myDeclaration.declarationType);
+                        return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
                     }
                 }
             }
@@ -344,7 +347,16 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitExpExpr(FluxParser.ExpExprContext ctx) {
-        return String.format("Math.pow(%s, %s)", visit(ctx.expression(0)), visit(ctx.expression(1)));
+        String castString = "";
+        for (var expression : ctx.expression()) {
+            if (expression instanceof IdExprContext idExpr) {
+                var declaration = getDeclaration(idExpr.qualifiedId().getText(), ctx);
+                if (declaration != null && !declaration.type.equals("double")) {
+                    castString = String.format("(%s) ", declaration.type);
+                }
+            }
+        }
+        return String.format("%sMath.pow(%s, %s)", castString, visit(ctx.expression(0)), visit(ctx.expression(1)));
     }
 
     @Override
@@ -488,8 +500,17 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             var declaration = getDeclaration(ctx.qualifiedId().getText(), ctx);
 
             if (declaration != null) {
-                if (declaration.id.equals(ctx.qualifiedId().getText())) {
-                    localClassString = String.format("_class_%s$%s.", declaration.id, sibling.functionDecl().hashCode());
+
+                var parent1 = firstNonNull(
+                        getToClosestParent(declaration.declaration, RunnableFunctionDeclContext.class),
+                        getToClosestParent(declaration.declaration, ConsumerFunctionDeclContext.class));
+                var parent2 = firstNonNull(
+                        getToClosestParent(ctx, RunnableFunctionDeclContext.class),
+                        getToClosestParent(ctx, ConsumerFunctionDeclContext.class));
+                if (parent1 != null && parent2 != null) {
+                    if (declaration.id.equals(ctx.qualifiedId().getText()) && parent1.equals(parent2)) {
+                        localClassString = String.format("_class_%s$%s.", declaration.id, sibling.functionDecl().hashCode());
+                    }
                 }
             }
         }
@@ -601,7 +622,6 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return null;
     }
 
-    // TODO Fix sibling handling
     public static <T extends ParseTree> List<T> getToSiblingsOfType(ParseTree ctx, Class<T> targetType) {
         ParseTree parent = ctx.getParent();
         List<T> siblings = new ArrayList<>();

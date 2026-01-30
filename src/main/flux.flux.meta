@@ -1,7 +1,0 @@
-{
-  "top": false,
-  "imports": [
-    "java.util.*",
-    "java.io.*"
-  ]
-}
