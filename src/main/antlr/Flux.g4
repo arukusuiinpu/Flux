@@ -8,7 +8,7 @@ declaration
     |   varDecl terminator
     ;
 
-type:   'float' | 'double' | 'int' | 'bool' | 'string' | qualifiedId ;
+type:   type '<' type? '>' | qualifiedId ;
 
 terminator : TERMINATOR+ ;
 
@@ -24,8 +24,8 @@ nativeMd : 'native' ;
 strictfpMd : 'strictfp' ;
 
 importDecl
-    :   'import' qualifiedId (wildcard=WILDCARD)?
-    |   'import static' qualifiedId (wildcard=WILDCARD)?
+    :   ('import' | 'using') qualifiedId (wildcard=WILDCARD)?
+    |   ('import' | 'using') 'static' qualifiedId (wildcard=WILDCARD)?
     ;
 
 variableModifiers
@@ -90,7 +90,7 @@ statement
     :   functionDecl                                            # FunctionDeclStatement
     |   voidBlock                                               # VoidBlockStatement
     |   'for' '(' localVarDecl terminator expression terminator assignmentStat ')' block # ForStatement
-    |   'for' '(' type ID ':' expression ')' block              # ForeachStatement
+    |   ('for' | 'foreach') '(' type ID (':' | 'in') expression ')' block              # ForeachStatement
     |   'if' '(' expression ')' block ('else' block)?           # IfStatement
     |   varDecl terminator                                      # VarDeclStatement
     |   assignmentStat terminator                               # AssignmentStatement
@@ -113,7 +113,7 @@ assignmentStat
 
 expression
     :   '(' expression ')'                                      # ParenthesizedExpr
-    |   '[' expression ']'                                      # SqParenthesizedExpr // TODO Implement
+    |   '[' expressionList? ']'                                 # ArrayExpr // TODO Implement
     |   expression operator=('++' | '--')                       # PostfixExpr
     |   '(' type ')' expression                                 # CastExpr
     |   expression '**' expression                              # ExpExpr
@@ -124,7 +124,8 @@ expression
     |   expression operator='%/' expression                     # CeilDivExpr
     |   expression operator=('+' | '-') expression              # AddSubExpr
     |   expression operator=('<<' | '>>' | '>>>') expression    # ShiftExpr
-    |   expression operator=('<' | '>' | '<=' | '>=' | 'instanceof') expression  # RelationalExpr
+    |   expression operator=('<' | '>' | '<=' | '>=') expression # RelationalExpr
+    |   expression operator='instanceof' expression             # RelationalExpr
     |   expression operator=('==' | '!=') expression            # EqualityExpr
     |   expression '&' expression                               # BitwiseANDExpr
     |   expression '^' expression                               # BitwiseXORExpr
@@ -132,6 +133,7 @@ expression
     |   expression ('&&' | 'and') expression                    # LogicalANDExpr
     |   expression ('||' | 'or') expression                     # LogicalORExpr
     |   expression '?' expression ':' expression                # TernaryExpr
+    |   'new' type '(' expressionList? ')' block?               # CreationExpr
     |   qualifiedId '(' expressionList? ')'                     # FunctionCallExpr
     |   qualifiedId '[' expression ']'                          # ArrayAccessExpr
     |   expression '.' expression                               # VariableAccessExpr

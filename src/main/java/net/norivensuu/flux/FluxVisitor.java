@@ -1,4 +1,4 @@
-// Generated from C:/Users/student/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
+// Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
 package net.norivensuu.flux;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -371,6 +371,13 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitCeilDivExpr(FluxParser.CeilDivExprContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code CreationExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCreationExpr(FluxParser.CreationExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code BitwiseXORExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
@@ -384,13 +391,6 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitNotExpr(FluxParser.NotExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code SqParenthesizedExpr}
-	 * labeled alternative in {@link FluxParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitSqParenthesizedExpr(FluxParser.SqParenthesizedExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ShiftExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
@@ -454,6 +454,13 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitCharExpr(FluxParser.CharExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ArrayExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArrayExpr(FluxParser.ArrayExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code FunctionCallExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
