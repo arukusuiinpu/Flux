@@ -224,6 +224,18 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code VarFunctionDecl}
+	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * @param ctx the parse tree
+	 */
+	void enterVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code VarFunctionDecl}
+	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * @param ctx the parse tree
+	 */
+	void exitVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code ConsumerFunctionDecl}
 	 * labeled alternative in {@link FluxParser#functionDecl}.
 	 * @param ctx the parse tree
@@ -275,6 +287,26 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitReturnBlock(FluxParser.ReturnBlockContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#voidLines}.
+	 * @param ctx the parse tree
+	 */
+	void enterVoidLines(FluxParser.VoidLinesContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#voidLines}.
+	 * @param ctx the parse tree
+	 */
+	void exitVoidLines(FluxParser.VoidLinesContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#expressionLines}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpressionLines(FluxParser.ExpressionLinesContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#expressionLines}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpressionLines(FluxParser.ExpressionLinesContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code ReturnBlockOption}
 	 * labeled alternative in {@link FluxParser#block}.

@@ -8,12 +8,12 @@ declaration
     |   varDecl terminator
     ;
 
-type:   type '<' type? '>' | qualifiedId ;
+type:   type '<' type? '>' | VAR | qualifiedId ;
 
 terminator : TERMINATOR+ ;
 
 accessModifier : 'public' | 'protected' | 'private' ;
-unfinishedMd : 'unfinished' ;
+unfinishedMd : 'unfinished' | 'illegal' ;
 implementationModifier : 'abstract' | 'static' | 'native' ;
 staticMd : 'static' ;
 finalMd : 'final' ;
@@ -64,8 +64,12 @@ functionDecl
     :   functionModifiers
         VOID ID '(' formalParameters? ')' voidBlock             # RunnableFunctionDecl
     |   functionModifiers
+        VAR? ID '(' formalParameters? ')' returnBlock           # VarFunctionDecl
+    |   functionModifiers
         type ID '(' formalParameters? ')' returnBlock           # ConsumerFunctionDecl
     ;
+
+
 
 formalParameters
     :   formalParameter (',' formalParameter)*
@@ -77,8 +81,11 @@ formalParameter
 
 // TODO allow for statements to not need the last terminator
 //  (ex. string NewFunc(string str) { return str.repeat(7); System.out.println(wow) } )
-voidBlock : FIGURE_BRACKET_L (statement | terminator)* voidReturn* FIGURE_BRACKET_R ;
-returnBlock : FIGURE_BRACKET_L (statement | terminator)* expressionReturn* FIGURE_BRACKET_R ;
+voidBlock : FIGURE_BRACKET_L voidLines FIGURE_BRACKET_R ;
+returnBlock : FIGURE_BRACKET_L expressionLines FIGURE_BRACKET_R ;
+
+voidLines : (statement | voidReturn | terminator)* ;
+expressionLines : (statement | expressionReturn | terminator)* ;
 
 block
     :   returnBlock                                             # ReturnBlockOption
@@ -93,7 +100,7 @@ statement
     |   voidBlock                                               # VoidBlockStatement
     |   'for' '(' localVarDecl terminator expression terminator assignmentStat ')' block # ForStatement
     |   ('for' | 'foreach') '(' type? ID (':' | 'in') expression ')' block # ForeachStatement
-    |   'if' '(' expression ')' block ('else' block)?           # IfStatement
+    |   'if' '(' expression ')' block terminator? (('else if' | 'elif') '(' expression ')' block)* terminator? ('else' block)? # IfStatement
     |   varDecl terminator                                      # VarDeclStatement
     |   assignmentStat terminator                               # AssignmentStatement
     |   expression terminator                                   # ExpressionStatement
@@ -173,10 +180,12 @@ fragment ESC_SEQ
 fragment HEX_DIGIT : [0-9a-fA-F] ;
 
 INT :   [0-9]+ ;
-DECIMAL : [0-9]+ '.' [0-9]+ ('f' | 'F' | 'd' | 'D')? ;
+DECIMAL : [0-9]+ ('.' [0-9]+)? ('f' | 'F' | 'd' | 'D')? ;
 BOOL : ('true' | 'false') ;
-VOID : 'void' ;
 WILDCARD : '.*' ;
+
+VOID : 'void' ;
+VAR : 'var' ;
 
  // Added these two bad boys because it's funny
 FIGURE_BRACKET_L : '<%' | '{' ;

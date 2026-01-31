@@ -140,6 +140,13 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code VarFunctionDecl}
+	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code ConsumerFunctionDecl}
 	 * labeled alternative in {@link FluxParser#functionDecl}.
 	 * @param ctx the parse tree
@@ -170,6 +177,18 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitReturnBlock(FluxParser.ReturnBlockContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FluxParser#voidLines}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVoidLines(FluxParser.VoidLinesContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FluxParser#expressionLines}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExpressionLines(FluxParser.ExpressionLinesContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ReturnBlockOption}
 	 * labeled alternative in {@link FluxParser#block}.

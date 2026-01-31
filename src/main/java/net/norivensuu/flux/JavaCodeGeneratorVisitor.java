@@ -53,14 +53,16 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             checkDeclarations = true;
         }
 
-        public void HashDeclaration(String id, ParseTree ctx) {
-            declarations.put(ctx, getDeclaration(id, ctx));
-        }
         public void HashDeclaration(ParseTree ctx, Declaration declaration) {
-            declarations.put(ctx, declaration);
+            if (!declarations.containsKey(ctx)) {
+                declarations.put(ctx, declaration);
+            }
+        }
+        public void HashDeclaration(String id, ParseTree ctx) {
+            HashDeclaration(ctx, getDeclaration(id, ctx));
         }
         public void HashDeclaration(ParseTree ctx, String type, String id) {
-            declarations.put(ctx, new Declaration(type, id, ctx));
+            HashDeclaration(ctx, new Declaration(type, id, ctx));
         }
 
         @Override
@@ -164,10 +166,49 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public Declaration simplifyDeclaration(FunctionDeclContext ctx) {
-        String declType = ctx instanceof RunnableFunctionDeclContext ? "void" : visit(((ConsumerFunctionDeclContext) ctx).type());
-        String declId = ctx instanceof RunnableFunctionDeclContext ? ((RunnableFunctionDeclContext) ctx).ID().getText() : ((ConsumerFunctionDeclContext) ctx).ID().getText();
 
-        return new Declaration(declType, declId, ctx, "function");
+        String type = "";
+        if (ctx instanceof RunnableFunctionDeclContext decl) {
+            type = decl.VOID().getText();
+        }
+        else if (ctx instanceof ConsumerFunctionDeclContext decl) {
+            type = visit(decl.type());
+        }
+        else if (ctx instanceof VarFunctionDeclContext decl) {
+            Set<String> types = new HashSet<>();
+
+            collectReturnTypes(decl.returnBlock(), types);
+
+            if (types.size() == 1) {
+                type = types.stream().findFirst().get();
+            } else {
+                type = "illegal";
+            }
+        }
+
+        String id = "";
+        if (ctx instanceof RunnableFunctionDeclContext decl) {
+            id = decl.ID().getText();
+        }
+        else if (ctx instanceof ConsumerFunctionDeclContext decl) {
+            id = decl.ID().getText();
+        }
+        else if (ctx instanceof VarFunctionDeclContext decl) {
+            id = decl.ID().getText();
+        }
+
+        return new Declaration(type, id, ctx, "function");
+    }
+
+    private void collectReturnTypes(ParseTree ctx, Set<String> types) {
+        for (int i = 0; i < ctx.getChildCount(); i++) {
+            var child = ctx.getChild(i);
+
+            if (child instanceof ExpressionReturnContext ret) {
+                types.add(getAutoType(ret.expression()));
+            }
+            collectReturnTypes(child, types);
+        }
     }
 
     public Declaration simplifyDeclaration(Object ctx) {
@@ -764,6 +805,13 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                 type = declaration.type;
             }
         }
+        else if (object instanceof VarFunctionDeclContext expr) {
+            var declaration = simplifyDeclaration(expr);
+
+            if (declaration != null) {
+                type = declaration.type;
+            }
+        }
         else if (object instanceof ParseTree expr) {
             type = "var";
         }
@@ -807,26 +855,34 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
+    public String visitVoidBlockStatement(VoidBlockStatementContext ctx) {
+        return visitBlock(ctx, ctx.voidBlock().voidLines());
+    }
+
+    @Override
     public String visitVoidBlock(VoidBlockContext ctx) {
-        return visitBlock(ctx, ctx.statement(), null);
+        return visitBlock(ctx, ctx.voidLines());
     }
 
     @Override
     public String visitReturnBlock(ReturnBlockContext ctx) {
-        return visitBlock(ctx, ctx.statement(), ctx.expressionReturn().stream().map(ExpressionReturnContext::expression).collect(Collectors.toList()));
+        return visitBlock(ctx, ctx.expressionLines());
     }
 
-    public String visitBlock(ParseTree ctx, List<FluxParser.StatementContext> statement, List<ExpressionContext> expressions) {
+    @Override
+    public String visitExpressionReturn(ExpressionReturnContext ctx) {
+        return String.format("return %s;", visit(ctx.expression()));
+    }
+
+    public String visitBlock(ParseTree ctx, ParseTree lines) {
         var program = getProgram(ctx);
 
         StringBuilder blockCode = new StringBuilder("{");
         program.javaCode.indentLevel++;
-        for (var statementCtx : statement) {
-            blockCode.append("\r").append("\t".repeat(program.javaCode.indentLevel)).append(visit(statementCtx));
-        }
-        if (expressions != null) {
-            for (var expression : expressions) {
-                blockCode.append("\r").append("\t".repeat(program.javaCode.indentLevel)).append(visit(expression));
+        for (int i = 0; i < lines.getChildCount(); i++) {
+            var line = lines.getChild(i);
+            if (line != null && !(line instanceof TerminatorContext)) {
+                blockCode.append("\r").append("\t".repeat(program.javaCode.indentLevel)).append(visit(line));
             }
         }
         program.javaCode.indentLevel--;
@@ -841,10 +897,12 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitIfStatement(FluxParser.IfStatementContext ctx) {
-        String string = "if (";
-        string += visit(ctx.expression()) + ")";
-        string += visit(ctx.block(0)) + "\n";
-        return string;
+        StringBuilder builderElseifString = new StringBuilder();
+        for (int i = 1; i < ctx.expression().size()-1; i++) {
+            builderElseifString.append(String.format("else if (%s) %s", visit(ctx.expression(i)), visit(ctx.block(i))));
+        }
+        String elseString = String.format("else %s", visit(ctx.block(ctx.block().size()-1)));
+        return String.format("if (%s) %s%s%s", visit(ctx.expression(0)), visit(ctx.block(0)), builderElseifString, elseString);
     }
 
     @Override
@@ -881,6 +939,19 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         getProgram(ctx).javaCode.HashDeclaration(ctx, simplifyDeclaration(ctx));
         return visitFunction(
                 visit(ctx.type()),
+                ctx.ID().getText(),
+                ctx.formalParameters(),
+                ctx.returnBlock(),
+                ctx.functionModifiers()
+        );
+    }
+
+    @Override
+    public String visitVarFunctionDecl(VarFunctionDeclContext ctx) {
+        getProgram(ctx).javaCode.HashDeclaration(ctx, simplifyDeclaration(ctx));
+        Print(ctx.getClass(), getAutoType(ctx));
+        return visitFunction(
+                getAutoType(ctx),
                 ctx.ID().getText(),
                 ctx.formalParameters(),
                 ctx.returnBlock(),
