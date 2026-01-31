@@ -30,7 +30,9 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         public int lastImportsLine;
         public boolean checkDeclarations = true;
 
-        public Map<DeclarationContext, Integer> checkedDeclarations = new HashMap<>();
+        public Map<DeclarationContext, Integer> programDeclarations = new HashMap<>();
+        
+        public Map<ParseTree, Declaration> declarations = new HashMap<>();
 
         public JavaCode() {
             builder = new StringBuilder();
@@ -42,13 +44,23 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         public void checkDeclaration(DeclarationContext ctx, int lastIndex) {
             atIndex += lastIndex;
-            checkedDeclarations.put(ctx, lastIndex);
+            programDeclarations.put(ctx, lastIndex);
         }
 
         public void resetJavaCode() {
 //            indentLevel = 0;
             atIndex = 0;
             checkDeclarations = true;
+        }
+
+        public void HashDeclaration(String id, ParseTree ctx) {
+            declarations.put(ctx, getDeclaration(id, ctx));
+        }
+        public void HashDeclaration(ParseTree ctx, Declaration declaration) {
+            declarations.put(ctx, declaration);
+        }
+        public void HashDeclaration(ParseTree ctx, String type, String id) {
+            declarations.put(ctx, new Declaration(type, id, ctx));
         }
 
         @Override
@@ -64,7 +76,6 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitProgram(FluxParser.ProgramContext ctx) {
         var program = FluxCompiler.getProgramRegistry().get(ctx);
-
         program.javaCode = new JavaCode();
 
         if (!ctx.statement().isEmpty()) {
@@ -75,41 +86,147 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             program.javaCode.resetJavaCode();
             program.javaCode.checkDeclarations = false;
 
-            for (var declarationCtx : ctx.declaration()) {
-                if (program.javaCode.checkDeclarations)
-                    break;
-
-                if (!program.javaCode.checkedDeclarations.containsKey(declarationCtx)) {
-                    String javaString = "";
-                    if (declarationCtx.importDecl() != null) {
-                        FluxParser.ImportDeclContext declCtx = declarationCtx.importDecl();
-
-                        javaString = visit(declCtx);
-                        program.javaCode.addLine(javaString, program.javaCode.atIndex);
-                        program.javaCode.lastImportsLine += javaString.length()+1;
-                    } else if (declarationCtx.varDecl() != null) {
-                        FluxParser.VarDeclContext declCtx = declarationCtx.varDecl();
-
-                        javaString = visit(declCtx);
-                        program.javaCode.addLine(javaString, program.javaCode.atIndex);
-                    } else if (declarationCtx.functionDecl() != null) {
-                        String functionCode = visit(declarationCtx.functionDecl());
-                        if (functionCode != null) {
-                            javaString = functionCode.replace("\n", "\n    ").trim();
-                            program.javaCode.addLine(javaString, program.javaCode.atIndex);
-                        }
-                    }
-                    else continue;
-
-                    program.javaCode.checkDeclaration(declarationCtx, javaString.length()+1);
+            for (var declaration : ctx.declaration()) {
+                if (declaration.importDecl() != null) {
+                    mapDeclarations(declaration.importDecl(), program);
                 }
-                else {
-                    program.javaCode.atIndex += program.javaCode.checkedDeclarations.get(declarationCtx);
+            }
+            for (var declaration : ctx.declaration()) {
+                if (declaration.functionDecl() != null) {
+                    mapDeclarations(declaration.functionDecl(), program);
                 }
+            }
+            for (var declaration : ctx.declaration()) {
+                if (declaration.varDecl() != null) {
+                    mapDeclarations(declaration.varDecl(), program);
+                }
+            }
+
+            for (var decl : ctx.declaration()) {
+                processDeclaration(decl, program);
             }
         }
 
         return program.javaCode.toString();
+    }
+
+    public void mapDeclarations(ParseTree ctx, FluxCompiler.Program program) {
+        if (ctx != null) {
+            var declaration = simplifyDeclaration(ctx);
+
+            if (declaration != null)
+                program.javaCode.HashDeclaration(ctx, declaration);
+
+            for (int i = 0; i < ctx.getChildCount(); i++) {
+                mapDeclarations(ctx.getChild(i), program);
+            }
+        }
+    }
+
+    public Declaration simplifyDeclaration(LocalVarDeclContext ctx) {
+        if (ctx != null) {
+
+            var type = simplifyLocalVarType(ctx);
+
+            return new Declaration(type.type, type.id, ctx, "var");
+        }
+        return null;
+    }
+
+    public Declaration simplifyDeclaration(DeclarationContext ctx) {
+        if (ctx.varDecl() != null) {
+            var globalDecl = ctx.varDecl();
+
+            var localType = simplifyLocalVarType(ctx.varDecl().localVarDecl());
+
+            return new Declaration(localType.type, localType.id, globalDecl, "var");
+        }
+        else if (ctx.functionDecl() != null) {
+            return simplifyDeclaration(ctx.functionDecl());
+        }
+        else if (ctx.importDecl() != null) {
+            return simplifyDeclaration(ctx.importDecl());
+        }
+        return null;
+    }
+
+    public Declaration simplifyDeclaration(ImportDeclContext ctx) {
+        String declType = String.format("import%s", ctx.qualifiedId().getText().startsWith("static") ? " static" : "");
+        String declId = ctx.qualifiedId().getText().replace("static ", "");
+
+        return new Declaration(declType, declId, ctx, "library");
+    }
+
+    public Declaration simplifyDeclaration(VarDeclContext ctx) {
+        var localType = simplifyLocalVarType(ctx.localVarDecl());
+
+        return new Declaration(localType.type, localType.id, ctx, "var");
+    }
+
+    public Declaration simplifyDeclaration(FunctionDeclContext ctx) {
+        String declType = ctx instanceof RunnableFunctionDeclContext ? "void" : visit(((ConsumerFunctionDeclContext) ctx).type());
+        String declId = ctx instanceof RunnableFunctionDeclContext ? ((RunnableFunctionDeclContext) ctx).ID().getText() : ((ConsumerFunctionDeclContext) ctx).ID().getText();
+
+        return new Declaration(declType, declId, ctx, "function");
+    }
+
+    public Declaration simplifyDeclaration(Object ctx) {
+        if (ctx instanceof LocalVarDeclContext decl) {
+            return simplifyDeclaration(decl);
+        }
+        else if (ctx instanceof DeclarationContext decl) {
+            return simplifyDeclaration(decl);
+        }
+        else if (ctx instanceof VarDeclContext decl) {
+            return simplifyDeclaration(decl);
+        }
+        else if (ctx instanceof FunctionDeclContext decl) {
+            return simplifyDeclaration(decl);
+        }
+        else if (ctx instanceof ImportDeclContext decl) {
+            return simplifyDeclaration(decl);
+        }
+        return null;
+    }
+
+    private boolean hasIDField(Object obj) {
+        Class<?> clazz = obj.getClass();
+        while (clazz != null) {
+            try {
+                clazz.getDeclaredField("ID");
+                return true;
+            } catch (NoSuchFieldException e) {
+                clazz = clazz.getSuperclass();
+            }
+        }
+        return false;
+    }
+
+    private void processDeclaration(FluxParser.DeclarationContext declarationCtx, FluxCompiler.Program program) {
+        if (program.javaCode.checkDeclarations) return;
+
+        if (!program.javaCode.programDeclarations.containsKey(declarationCtx)) {
+            String javaString = "";
+
+            if (declarationCtx.importDecl() != null) {
+                javaString = visit(declarationCtx.importDecl());
+                program.javaCode.addLine(javaString, program.javaCode.atIndex);
+                program.javaCode.lastImportsLine += javaString.length() + 1;
+            } else if (declarationCtx.functionDecl() != null) {
+                String functionCode = visit(declarationCtx.functionDecl());
+                if (functionCode != null) {
+                    javaString = functionCode.replace("\n", "\n    ").trim();
+                    program.javaCode.addLine(javaString, program.javaCode.atIndex);
+                }
+            } else if (declarationCtx.varDecl() != null) {
+                javaString = visit(declarationCtx.varDecl());
+                program.javaCode.addLine(javaString, program.javaCode.atIndex);
+            }
+
+            program.javaCode.checkDeclaration(declarationCtx, javaString.length() + 1);
+        } else {
+            program.javaCode.atIndex += program.javaCode.programDeclarations.get(declarationCtx);
+        }
     }
 
     @Override
@@ -296,7 +413,15 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         var varDecl = getToClosestParent(ctx, FluxParser.VarDeclContext.class);
         if (varDecl != null) {
-            type = visit(varDecl.localVarDecl().type());
+            var localType = simplifyLocalVarType(varDecl.localVarDecl());
+
+            type = localType.type;
+        }
+        var varStatDecl = getToClosestParent(ctx, FluxParser.VarDeclStatementContext.class);
+        if (varStatDecl != null) {
+            var localType = simplifyLocalVarType(varStatDecl.varDecl().localVarDecl());
+
+            type = localType.type;
         }
         var assignmentStat = getToClosestParent(ctx, FluxParser.AssignmentStatContext.class);
         if (assignmentStat != null) {
@@ -336,6 +461,34 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
         return ctx.DECIMAL().getText();
     }
+
+    public static class LocalVarType {
+        public String type;
+        public String id;
+        public ExpressionContext expression;
+
+        public LocalVarType(String type, String id, ExpressionContext expression) {
+            this.type = type;
+            this.id = id;
+            this.expression = expression;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("<%s %s>", type, id);
+        }
+    }
+
+    public LocalVarType simplifyLocalVarType(LocalVarDeclContext ctx) {
+        if (ctx instanceof StrictlyTypedLocalVarContext localCtx) {
+            return new LocalVarType(visit(localCtx.type()), localCtx.ID().getText(), localCtx.expression());
+        }
+        else if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
+            return new LocalVarType(localCtx.type() != null ? visit(localCtx.type()) : getAutoType(localCtx.expression()), localCtx.ID().getText(), localCtx.expression());
+        }
+        return null;
+    }
+
 
     public int whatParameterAmI(ParseTree ctx,  FluxParser.ExpressionListContext parent) {
         for (int i = 0; i < parent.expression().size(); i++) {
@@ -382,90 +535,67 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
     }
 
-    public Declaration simplifyDeclaration(LocalVarDeclContext ctx) {
-        if (ctx != null) {
-            var globalDecl = ctx;
+    public Declaration getDeclaration(ParseTree ctx) {
+        var program = getProgram(ctx);
 
-            return new Declaration(visit(globalDecl.type()), globalDecl.ID().getText(), globalDecl, "var");
-        }
-        return null;
-    }
-
-    public Declaration simplifyDeclaration(DeclarationContext ctx) {
-        if (ctx.varDecl() != null) {
-            var globalDecl = ctx.varDecl();
-
-            return new Declaration(visit(globalDecl.localVarDecl().type()), globalDecl.localVarDecl().ID().getText(), globalDecl, "var");
-        }
-        else if (ctx.functionDecl() != null) {
-            return simplifyDeclaration(ctx.functionDecl());
-        }
-        return null;
-    }
-
-    public Declaration simplifyDeclaration(VarDeclContext ctx) {
-        String declType = visit(ctx.localVarDecl().type());
-        String declId = ctx.localVarDecl().ID().getText();
-
-        return new Declaration(declType, declId, ctx, "function");
-    }
-
-    public Declaration simplifyDeclaration(FunctionDeclContext ctx) {
-        String declType = ctx instanceof RunnableFunctionDeclContext ? "void" : visit(((ConsumerFunctionDeclContext) ctx).type());
-        String declId = ctx instanceof RunnableFunctionDeclContext ? ((RunnableFunctionDeclContext) ctx).ID().getText() : ((ConsumerFunctionDeclContext) ctx).ID().getText();
-
-        return new Declaration(declType, declId, ctx, "function");
+        return program.javaCode.declarations.get(ctx);
     }
 
     public Declaration getDeclaration(String id, ParseTree ctx) {
+        var program = getProgram(ctx);
 
-        var funcSiblings = getToSiblingsOfType(ctx, FluxParser.FunctionDeclStatementContext.class);
+        var declaration = program.javaCode.declarations.values().stream().filter((d) -> d.id.equals(id)).findFirst();
 
-        if (!funcSiblings.isEmpty()) {
-            for (var sibling : funcSiblings) {
-                var myDeclaration = simplifyDeclaration(sibling.functionDecl());
+        if (declaration.isEmpty()) {
+            var funcSiblings = getToSiblingsOfType(ctx, FluxParser.FunctionDeclStatementContext.class);
+            if (!funcSiblings.isEmpty()) {
+                for (var sibling : funcSiblings) {
+                    var myDeclaration = simplifyDeclaration(sibling.functionDecl());
 
-                if (myDeclaration != null) {
-                    if (id.equals(myDeclaration.id)) {
-                        String type = convertType(myDeclaration.type);
+                    if (myDeclaration != null) {
+                        if (id.equals(myDeclaration.id)) {
+                            String type = convertType(myDeclaration.type);
 
-                        return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
+                            program.javaCode.HashDeclaration(ctx, type, id);
+                            return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
+                        }
+                    }
+                }
+            }
+
+            var varSiblings = getToSiblingsOfType(ctx, FluxParser.VarDeclStatementContext.class);
+            if (!varSiblings.isEmpty()) {
+                for (var sibling : varSiblings) {
+                    var myDeclaration = simplifyDeclaration(sibling.varDecl());
+
+                    if (myDeclaration != null) {
+                        if (id.equals(myDeclaration.id)) {
+                            String type = convertType(myDeclaration.type);
+
+                            program.javaCode.HashDeclaration(ctx, type, id);
+                            return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
+                        }
+                    }
+                }
+            }
+
+            var siblings = getToSiblingsOfType(ctx, FluxParser.DeclarationContext.class);
+            if (!siblings.isEmpty()) {
+                for (var sibling : siblings) {
+                    var myDeclaration = simplifyDeclaration(sibling);
+
+                    if (myDeclaration != null) {
+                        if (id.equals(myDeclaration.id)) {
+                            String type = convertType(myDeclaration.type);
+
+                            program.javaCode.HashDeclaration(ctx, type, id);
+                            return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
+                        }
                     }
                 }
             }
         }
-
-        var varSiblings = getToSiblingsOfType(ctx, FluxParser.VarDeclStatementContext.class);
-
-        if (!varSiblings.isEmpty()) {
-            for (var sibling : varSiblings) {
-                var myDeclaration = simplifyDeclaration(sibling.varDecl());
-
-                if (myDeclaration != null) {
-                    if (id.equals(myDeclaration.id)) {
-                        String type = convertType(myDeclaration.type);
-
-                        return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
-                    }
-                }
-            }
-        }
-
-        var siblings = getToSiblingsOfType(ctx, FluxParser.DeclarationContext.class);
-
-        if (!siblings.isEmpty()) {
-            for (var sibling : siblings) {
-                var myDeclaration = simplifyDeclaration(sibling);
-
-                if (myDeclaration != null) {
-                    if (id.equals(myDeclaration.id)) {
-                        String type = convertType(myDeclaration.type);
-
-                        return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
-                    }
-                }
-            }
-        }
+        else return declaration.get();
 
         return null;
     }
@@ -562,6 +692,8 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         var declarationContext = getToClosestParent(ctx, VarDeclContext.class);
         if (declarationContext != null) {
             var declaration = simplifyDeclaration(declarationContext);
+
+            getProgram(ctx).javaCode.HashDeclaration(ctx, declaration);
             var type = declaration.type;
             if (!type.isEmpty() && ctx.type().type().isEmpty()) {
                 typeString = typeString + "<>";
@@ -601,7 +733,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public String getAutoType(Object object) {
-        String type = object.getClass().getTypeName();
+        String type = object.toString();
         if (object instanceof IdExprContext expr) {
             type = expr.getText();
         }
@@ -609,7 +741,12 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             type = "int";
         }
         else if (object instanceof DecimalExprContext expr) {
-            type = "double";
+            if (expr.getText().toLowerCase().contains("f")) {
+                type = "float";
+            }
+            else {
+                type = "double";
+            }
         }
         else if (object instanceof BoolExprContext expr) {
             type = "boolean";
@@ -619,6 +756,16 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
         else if (object instanceof CharExprContext expr) {
             type = "char";
+        }
+        else if (object instanceof FunctionCallExprContext expr) {
+            var declaration = getDeclaration(expr.qualifiedId().getText(), expr);
+
+            if (declaration != null) {
+                type = declaration.type;
+            }
+        }
+        else if (object instanceof ParseTree expr) {
+            type = "var";
         }
 
         return convertType(type); // Just to be safe
@@ -707,7 +854,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitForeachStatement(ForeachStatementContext ctx) {
-        return String.format("for (%s %s : %s) %s", visit(ctx.type()), visit(ctx.ID()), visit(ctx.expression()), visit(ctx.block()));
+        return String.format("for (%s %s : %s) %s", ctx.type() != null ? visit(ctx.type()) : "var", visit(ctx.ID()), visit(ctx.expression()), visit(ctx.block()));
     }
 
     @Override
@@ -719,6 +866,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitRunnableFunctionDecl(RunnableFunctionDeclContext ctx) {
+        getProgram(ctx).javaCode.HashDeclaration(ctx, simplifyDeclaration(ctx));
         return visitFunction(
                 convertType("void"),
                 ctx.ID().getText(),
@@ -730,6 +878,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitConsumerFunctionDecl(ConsumerFunctionDeclContext ctx) {
+        getProgram(ctx).javaCode.HashDeclaration(ctx, simplifyDeclaration(ctx));
         return visitFunction(
                 visit(ctx.type()),
                 ctx.ID().getText(),
@@ -844,10 +993,13 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         var functionDecl = ctx.functionDecl();
         var declaration = simplifyDeclaration(functionDecl);
+        program.javaCode.HashDeclaration(ctx, declaration);
+
         program.javaCode.indentLevel++;
         String uniqueId = String.format("%s$%s", declaration.id, functionDecl.hashCode());
         String text = String.format("class _Class_%s {%s\n}\nvar _class_%s = new _Class_%s();", uniqueId, "\r" + "\t".repeat(program.javaCode.indentLevel) + visit(ctx.functionDecl()), uniqueId, uniqueId);
         program.javaCode.indentLevel--;
+
         return text;
     }
 
@@ -917,21 +1069,45 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitVarDecl(FluxParser.VarDeclContext ctx) {
         String variableModifiers = parseVariableModifiers(ctx.variableModifiers());
-        return visitVar(ctx.localVarDecl(), variableModifiers) + ";";
-    }
-    @Override
-    public String visitLocalVarDecl(LocalVarDeclContext ctx) {
-        return visitVar(ctx, "");
+        return visitVar(ctx.localVarDecl(), variableModifiers, true) + ";";
     }
 
-    public String visitVar(LocalVarDeclContext ctx, String variableModifiers) {
-        String type = visit(ctx.type());
-        String id = ctx.ID().getText();
+    @Override
+    public String visitLooselyTypedLocalVar(LooselyTypedLocalVarContext ctx) {
+        return visitVar(ctx, "", false);
+    }
+
+    @Override
+    public String visitStrictlyTypedLocalVar(StrictlyTypedLocalVarContext ctx) {
+        return visitVar(ctx, "", false);
+    }
+
+    public String visitVar(LocalVarDeclContext ctx, String variableModifiers, boolean globalDecl) {
+        var localType = simplifyLocalVarType(ctx);
+
+        String type = localType.type;
+        String id = localType.id;
+        getProgram(ctx).javaCode.HashDeclaration(ctx, type, id);
+
+        ExpressionContext expression = null;
+        if (ctx instanceof StrictlyTypedLocalVarContext localCtx) {
+            expression = localCtx.expression();
+        }
+        else
+        if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
+            expression = localCtx.expression();
+        }
 
         StringBuilder statementBuilder = new StringBuilder();
 
-        if (ctx.expression() != null) {
-            String expressionValue = visit(ctx.expression());
+        if (expression != null) {
+
+            String expressionValue = visit(expression);
+
+            if (globalDecl && type.equals("var")) {
+                type = getAutoType(expression);
+            }
+
             for (String assertion : pendingAssertions) {
                 statementBuilder.append(assertion).append("\n");
             }

@@ -168,15 +168,29 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitVariableModifiers(FluxParser.VariableModifiersContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link FluxParser#localVarDecl}.
+	 * Enter a parse tree produced by the {@code StrictlyTypedLocalVar}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
 	 * @param ctx the parse tree
 	 */
-	void enterLocalVarDecl(FluxParser.LocalVarDeclContext ctx);
+	void enterStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link FluxParser#localVarDecl}.
+	 * Exit a parse tree produced by the {@code StrictlyTypedLocalVar}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
 	 * @param ctx the parse tree
 	 */
-	void exitLocalVarDecl(FluxParser.LocalVarDeclContext ctx);
+	void exitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code LooselyTypedLocalVar}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 */
+	void enterLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code LooselyTypedLocalVar}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 */
+	void exitLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FluxParser#varDecl}.
 	 * @param ctx the parse tree

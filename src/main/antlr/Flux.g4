@@ -39,7 +39,8 @@ variableModifiers
     ;
 
 localVarDecl
-    :   type ID ('=' expression)?
+    :   type ID ('=' expression)?                               # StrictlyTypedLocalVar
+    |   type? ID '=' expression                                 # LooselyTypedLocalVar
     ;
 
 varDecl
@@ -91,7 +92,7 @@ statement
     :   functionDecl                                            # FunctionDeclStatement
     |   voidBlock                                               # VoidBlockStatement
     |   'for' '(' localVarDecl terminator expression terminator assignmentStat ')' block # ForStatement
-    |   ('for' | 'foreach') '(' type ID (':' | 'in') expression ')' block              # ForeachStatement
+    |   ('for' | 'foreach') '(' type? ID (':' | 'in') expression ')' block # ForeachStatement
     |   'if' '(' expression ')' block ('else' block)?           # IfStatement
     |   varDecl terminator                                      # VarDeclStatement
     |   assignmentStat terminator                               # AssignmentStatement
