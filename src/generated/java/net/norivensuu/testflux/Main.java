@@ -12,8 +12,11 @@ String str1 = "'string1'";
 String str2 = "\"string2\"";
 char char1 = 's';
 boolean test;
+float var1 = 1.0F;
+float var2 = 1.0F;
+boolean var3 = SampleFunction(i, j);
 private boolean SampleFunction(float a, float b) {	float c = a + b;	float d = 3.14f;	float m1 = (float) Math.pow(c, d);	float m2 = (float) Math.floor(c / d);	float m3 = (float) Math.ceil(c / d);	m1 = (float) Math.pow(m1, 2);	m2 = (float) Math.pow(m2, 2);		List<String> list = new ArrayList<>() {		{			add("element1");			add("element2");		}	};	boolean k = c < d && d < m;	for (var element : list) {		Print(element, "C# foreach");	}	for (var element : list) {		Print(element, "Java foreach");	}	return k;}
-void main() {	Print((estimateTetration(2.0, 5.0)).doubleValue());	test = SampleFunction(i, j);	class _Class_SampleString$38262958 {		String SampleString(String name) {			return String.format("Hello, %s!", name);		}
+void main() {	Print((estimateTetration(2.0, 5.0)).doubleValue());	boolean test = SampleFunction(i, j);	class _Class_SampleString$730923082 {		String SampleString(String name) {			return String.format("Hello, %s!", name);		}
     }
-    var _class_SampleString$38262958 = new _Class_SampleString$38262958();	String wow = _class_SampleString$38262958.SampleString("random user") + test;}
+    var _class_SampleString$730923082 = new _Class_SampleString$730923082();	String wow = _class_SampleString$730923082.SampleString("random user") + test;}
 void unfinishedVoid() {	float unfinishedFloat;}

@@ -107,11 +107,19 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitVariableModifiers(FluxParser.VariableModifiersContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FluxParser#localVarDecl}.
+	 * Visit a parse tree produced by the {@code StrictlyTypedLocalVar}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLocalVarDecl(FluxParser.LocalVarDeclContext ctx);
+	T visitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code LooselyTypedLocalVar}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#varDecl}.
 	 * @param ctx the parse tree

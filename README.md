@@ -37,6 +37,11 @@ char char1 = 's' // Single symbol, technical or '' strings are treated as chars
 
 bool test;
 
+var var1 = 1.0F // Handles value variables
+var2 = 1.0F // Var is optional
+
+var3 = SampleFunction(i, j) // Also handles function variables
+
 private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 
     float c = a + b; float d = 3.14 // Both ';' and '\n' serve as terminators
@@ -57,7 +62,7 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
         Print(element, 'C# foreach') // Custom System.out.println wrapper
     }
 
-    for (var element : list) { // And Java format (':' and 'in' are interchangeable for both)
+    for (element : list) { // And Java format (':' and 'in' are interchangeable for both)
         Print(element, 'Java foreach')
     }
 
@@ -67,7 +72,7 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 void main() {
     Print((2.0 *** 5.0).doubleValue()); // Tetration
 
-    test = SampleFunction(i, j)
+    var test = SampleFunction(i, j)
 
     string SampleString(string name) { // Allows nested functions
         return String.format("Hello, %s!", name)
