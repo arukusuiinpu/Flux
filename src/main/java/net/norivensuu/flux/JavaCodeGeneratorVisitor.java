@@ -116,8 +116,9 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         if (ctx != null) {
             var declaration = simplifyDeclaration(ctx);
 
-            if (declaration != null)
+            if (declaration != null) {
                 program.javaCode.HashDeclaration(ctx, declaration);
+                }
 
             for (int i = 0; i < ctx.getChildCount(); i++) {
                 mapDeclarations(ctx.getChild(i), program);
@@ -525,17 +526,20 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             return new LocalVarType(visit(localCtx.type()), localCtx.ID().getText(), localCtx.expression());
         }
         else if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
-            return new LocalVarType(localCtx.type() != null ? visit(localCtx.type()) : getAutoType(localCtx.expression()), localCtx.ID().getText(), localCtx.expression());
+            return new LocalVarType(getAutoType(localCtx.expression()), localCtx.ID().getText(), localCtx.expression());
         }
         return null;
     }
 
 
-    public int whatParameterAmI(ParseTree ctx,  FluxParser.ExpressionListContext parent) {
-        for (int i = 0; i < parent.expression().size(); i++) {
-            if (parent.expression(i).equals(ctx)) return i;
+    public int whatParameterAmI(ParseTree ctx, List<ExpressionContext> expressions) {
+        for (int i = 0; i < expressions.size(); i++) {
+            if (expressions.get(i).equals(ctx)) return i;
         }
         return -1;
+    }
+    public int whatParameterAmI(ParseTree ctx,  FluxParser.ExpressionListContext parent) {
+        return whatParameterAmI(ctx, parent.expression());
     }
 
     public int whatChildAmI(ParseTree ctx) {
@@ -657,8 +661,10 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public String visitExp(Object exp1, Object exp2, ParseTree ctx) {
+        ensureImport(ctx, StandartFluxLibs.STATIC_MATH_UTILS);
+
         return visitBinaryOp(exp1, exp2, ctx,
-                (e1, e2) -> String.format("Math.pow(%s, %s)", e1, e2));
+                (e1, e2) -> String.format("power(%s, %s)", e1, e2));
     }
 
     @Override
@@ -798,6 +804,19 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         else if (object instanceof CharExprContext expr) {
             type = "char";
         }
+        else if (object instanceof TetrExprContext expr) {
+            var expressions = expr.expression();
+            for (var parameter : expressions) {
+                if (parameter instanceof IdExprContext idExpr) {
+                    var declaration = getDeclaration(idExpr.qualifiedId().getText(), expr);
+
+                    if (declaration != null) {
+                        type = convertType(declaration.type);
+                        break;
+                    }
+                }
+            }
+        }
         else if (object instanceof FunctionCallExprContext expr) {
             var declaration = getDeclaration(expr.qualifiedId().getText(), expr);
 
@@ -898,10 +917,13 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitIfStatement(FluxParser.IfStatementContext ctx) {
         StringBuilder builderElseifString = new StringBuilder();
-        for (int i = 1; i < ctx.expression().size()-1; i++) {
+        for (int i = 1; i < ctx.expression().size(); i++) {
             builderElseifString.append(String.format("else if (%s) %s", visit(ctx.expression(i)), visit(ctx.block(i))));
         }
-        String elseString = String.format("else %s", visit(ctx.block(ctx.block().size()-1)));
+        String elseString = "";
+        if (ctx.else_ != null) {
+            elseString = String.format("else %s", visit(ctx.block(ctx.block().size()-1)));
+        }
         return String.format("if (%s) %s%s%s", visit(ctx.expression(0)), visit(ctx.block(0)), builderElseifString, elseString);
     }
 
@@ -949,7 +971,6 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitVarFunctionDecl(VarFunctionDeclContext ctx) {
         getProgram(ctx).javaCode.HashDeclaration(ctx, simplifyDeclaration(ctx));
-        Print(ctx.getClass(), getAutoType(ctx));
         return visitFunction(
                 getAutoType(ctx),
                 ctx.ID().getText(),

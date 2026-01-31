@@ -209,18 +209,6 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -228,6 +216,18 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -365,18 +365,6 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterVoidBlockOption(FluxParser.VoidBlockOptionContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -384,6 +372,18 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitVoidBlockOption(FluxParser.VoidBlockOptionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

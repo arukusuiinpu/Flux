@@ -107,19 +107,19 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitVariableModifiers(FluxParser.VariableModifiersContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code StrictlyTypedLocalVar}
-	 * labeled alternative in {@link FluxParser#localVarDecl}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code LooselyTypedLocalVar}
 	 * labeled alternative in {@link FluxParser#localVarDecl}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code StrictlyTypedLocalVar}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#varDecl}.
 	 * @param ctx the parse tree
@@ -190,19 +190,19 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpressionLines(FluxParser.ExpressionLinesContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code ReturnBlockOption}
-	 * labeled alternative in {@link FluxParser#block}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code VoidBlockOption}
 	 * labeled alternative in {@link FluxParser#block}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitVoidBlockOption(FluxParser.VoidBlockOptionContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ReturnBlockOption}
+	 * labeled alternative in {@link FluxParser#block}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitReturnBlockOption(FluxParser.ReturnBlockOptionContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#expressionReturn}.
 	 * @param ctx the parse tree

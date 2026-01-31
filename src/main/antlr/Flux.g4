@@ -39,8 +39,8 @@ variableModifiers
     ;
 
 localVarDecl
-    :   type ID ('=' expression)?                               # StrictlyTypedLocalVar
-    |   type? ID '=' expression                                 # LooselyTypedLocalVar
+    :   VAR? ID '=' expression                                 # LooselyTypedLocalVar
+    |   type ID ('=' expression)?                               # StrictlyTypedLocalVar
     ;
 
 varDecl
@@ -88,8 +88,8 @@ voidLines : (statement | voidReturn | terminator)* ;
 expressionLines : (statement | expressionReturn | terminator)* ;
 
 block
-    :   returnBlock                                             # ReturnBlockOption
-    |   voidBlock                                               # VoidBlockOption
+    :   voidBlock                                               # VoidBlockOption
+    |   returnBlock                                             # ReturnBlockOption
     ;
 
 expressionReturn : 'return' expression terminator ;
@@ -100,7 +100,7 @@ statement
     |   voidBlock                                               # VoidBlockStatement
     |   'for' '(' localVarDecl terminator expression terminator assignmentStat ')' block # ForStatement
     |   ('for' | 'foreach') '(' type? ID (':' | 'in') expression ')' block # ForeachStatement
-    |   'if' '(' expression ')' block terminator? (('else if' | 'elif') '(' expression ')' block)* terminator? ('else' block)? # IfStatement
+    |   'if' '(' expression ')' block terminator? (('else if' | 'elif') '(' expression ')' block)* terminator? ('else' else=block)? # IfStatement
     |   varDecl terminator                                      # VarDeclStatement
     |   assignmentStat terminator                               # AssignmentStatement
     |   expression terminator                                   # ExpressionStatement
@@ -192,7 +192,7 @@ FIGURE_BRACKET_L : '<%' | '{' ;
 FIGURE_BRACKET_R : '%>' | '}' ;
 
 ID  :   SYMBOL (SYMBOL | [0-9])* ;
-SYMBOL : (LETTER | '_') ;
+SYMBOL : (LETTER | '_' | '$') ;
 TERMINATOR : ';' | ( '\r'? '\n' ) ;
 qualifiedId : ID ('.' ID)* ;
 
