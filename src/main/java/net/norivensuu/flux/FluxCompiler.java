@@ -1,8 +1,12 @@
 package net.norivensuu.flux;
 
+import net.norivensuu.flux.visitors.ASMJavaCodeVisitor;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNodeImpl;
+import org.benf.cfr.reader.api.CfrDriver;
+import org.benf.cfr.reader.api.OutputSinkFactory;
+import org.objectweb.asm.ClassWriter;
 
 import java.io.FileInputStream;
 import java.io.FileWriter;
@@ -42,9 +46,9 @@ public class FluxCompiler {
             this.ctx = ctx;
         }
 
-        public FluxParser.DeclarationContext addImport(String importPath) {
-            return FluxCompiler.addImport(importPath, ctx);
-        }
+//        public FluxParser.DeclarationContext addImport(String importPath) {
+//            return FluxCompiler.addImport(importPath, ctx);
+//        }
     }
 
     static void main(String[] args) throws IOException {
@@ -80,10 +84,29 @@ public class FluxCompiler {
 
             System.out.println("Successfully parsed and enriched " + filePath.getFileName());
 
-            JavaCodeGeneratorVisitor generator = new JavaCodeGeneratorVisitor();
-            String generatedJavaCode = generator.visit(tree);
+            Path relativeToRoot = PROJECT_ROOT.relativize(filePath);
+            String fileNameNoExt = filePath.getFileName().toString().replace(".flux", "");
 
-            writeGeneratedJavaFile(filePath, generatedJavaCode);
+            String internalClassName = PROJECT_STRUCTURE_ROOT.resolve(relativeToRoot)
+                    .toString()
+                    .replace(".flux", "")
+                    .replace("\\", "/");
+
+            String binaryClassName = internalClassName.replace("/", ".");
+
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+
+            ASMJavaCodeVisitor generator = new ASMJavaCodeVisitor(cw, internalClassName);
+            generator.visit(tree);
+
+            byte[] bytecode = cw.toByteArray();
+
+            String javaSource = decompile(bytecode, binaryClassName);
+            System.out.println("--- Decompiled Source ---");
+            System.out.println(javaSource);
+
+            writeGeneratedClassFile(filePath, bytecode);
+            loadAndExecute(bytecode, binaryClassName);
 
         } catch (IOException e) {
             System.err.println("Error processing file: " + filePath);
@@ -117,45 +140,11 @@ public class FluxCompiler {
                     continue;
                 }
 
-                addImport(importPath, tree);
+//                addImport(importPath, tree);
             }
         }
 
         return tree;
-    }
-
-    public static FluxParser.DeclarationContext addImport(String importPath, FluxParser.ProgramContext tree) {
-        var program = programRegistry.get(tree);
-
-        FluxParser.DeclarationContext declarationContext = new FluxParser.DeclarationContext(tree, -1);
-        FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(declarationContext, -1);
-
-        //TODO Fix every anonymous token!
-        syntheticImport.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "import ")));
-
-        FluxParser.QualifiedIdContext qualIdCtx = new FluxParser.QualifiedIdContext(syntheticImport, -1);
-        qualIdCtx.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.ID, importPath)));
-        syntheticImport.addAnyChild(qualIdCtx);
-
-        Token wildcardToken = new CommonToken(FluxLexer.WILDCARD, ".*");
-        syntheticImport.addAnyChild(new TerminalNodeImpl(wildcardToken));
-
-        FluxParser.TerminatorContext terminator = new FluxParser.TerminatorContext(declarationContext, -1);
-        terminator.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.TERMINATOR, ";")));
-
-        declarationContext.addAnyChild(syntheticImport);
-        declarationContext.addAnyChild(terminator);
-
-        if (tree.children == null) {
-            tree.addAnyChild(declarationContext);
-        } else {
-            tree.children.addFirst(declarationContext);
-        }
-        declarationContext.parent = tree;
-
-        program.imports.add(importPath);
-
-        return declarationContext;
     }
 
     private static FluxMetadata buildClosestMetadata(Path directory) {
@@ -248,59 +237,68 @@ public class FluxCompiler {
         return meta;
     }
 
-    private static void writeGeneratedJavaFile(Path originalFluxPath, String javaSourceCode) {
+    private static void loadAndExecute(byte[] bytecode, String className) {
+        class FluxClassLoader extends ClassLoader {
+            public Class<?> define(String name, byte[] b) {
+                return defineClass(name, b, 0, b.length);
+            }
+        }
+
+        try {
+            FluxClassLoader loader = new FluxClassLoader();
+            Class<?> clazz = loader.define(className, bytecode);
+            clazz.getMethod("main", String[].class).invoke(null, (Object) new String[]{});
+        } catch (Exception e) {
+            System.err.println("Runtime execution failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void writeGeneratedClassFile(Path originalFluxPath, byte[] bytecode) {
         try {
             Path relativePath = FLUX_SOURCE_ROOT.relativize(originalFluxPath);
-
             Path relativeParent = relativePath.getParent();
+
             Path outputDirectory = (relativeParent != null)
                     ? OUTPUT_ROOT.resolve(relativeParent)
                     : OUTPUT_ROOT;
 
             Files.createDirectories(outputDirectory);
 
-            String fileName = originalFluxPath.getFileName().toString().replace(".flux", ".java");
+            String fileName = originalFluxPath.getFileName().toString().replace(".flux", ".class");
             Path outputPath = outputDirectory.resolve(fileName);
 
-            Files.writeString(outputPath, javaSourceCode);
+            Files.write(outputPath, bytecode);
 
-            System.out.println("Generated Java file: " + outputPath);
+            System.out.println("Generated Class file: " + outputPath);
         } catch (IOException e) {
-            System.err.println("Error writing generated Java file: " + e.getMessage());
+            System.err.println("Error writing generated Class file: " + e.getMessage());
         }
     }
 
-    private static void generateMavenPomFile() {
-        // TODO Implement properly
-        Path pomPath = OUTPUT_ROOT_DIR.resolve("pom.xml");
-        try (FileWriter writer = new FileWriter(pomPath.toFile())) {
-            System.out.println("\n--- Generating Maven POM file: " + pomPath + " ---");
+    private static String decompile(byte[] bytecode, String className) {
+        StringBuilder result = new StringBuilder();
 
-            Files.createDirectories(OUTPUT_ROOT_DIR);
+        OutputSinkFactory mySink = new OutputSinkFactory() {
+            @Override
+            public List<SinkClass> getSupportedSinks(SinkType sinkType, Collection<SinkClass> collection) {
+                return Collections.singletonList(SinkClass.DECOMPILED);
+            }
 
-            String pomContent = String.format("""
-            <project xmlns="http://maven.apache.org/POM/4.0.0"
-                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-                <modelVersion>4.0.0</modelVersion>
+            @Override
+            public <T> Sink<T> getSink(SinkType sinkType, SinkClass sinkClass) {
+                return item -> {
+                    if (sinkType == SinkType.JAVA) result.append(item);
+                };
+            }
+        };
 
-                <groupId>%s</groupId>
-                <artifactId>%s</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+        CfrDriver driver = new CfrDriver.Builder()
+                .withOutputSink(mySink)
+                .build();
 
-                <properties>
-                    <maven.compiler.source>25</maven.compiler.source>
-                    <maven.compiler.target>25</maven.compiler.target>
-                    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-                </properties>
-            </project>
-            """, PROJECT_ROOT.toString().replace("\\", "."), PROJECT_ROOT.getFileName());
+        driver.analyse(Collections.singletonList(className.replace(".", "/") + ".class"));
 
-            writer.write(pomContent);
-            System.out.println("Generated pom.xml successfully.");
-        } catch (IOException e) {
-            System.err.println("Error writing pom.xml: " + e.getMessage());
-        }
+        return result.toString();
     }
-
 }

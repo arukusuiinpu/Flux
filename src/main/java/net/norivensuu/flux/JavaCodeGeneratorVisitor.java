@@ -661,7 +661,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public String visitExp(Object exp1, Object exp2, ParseTree ctx) {
-        ensureImport(ctx, StandartFluxLibs.STATIC_MATH_UTILS);
+//        ensureImport(ctx, StandartFluxLibs.STATIC_MATH_UTILS);
 
         return visitBinaryOp(exp1, exp2, ctx,
                 (e1, e2) -> String.format("power(%s, %s)", e1, e2));
@@ -673,38 +673,38 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public String visitTetr(Object exp1, Object exp2, ParseTree ctx) {
-        ensureImport(ctx, StandartFluxLibs.STATIC_MATH_UTILS);
+//        ensureImport(ctx, StandartFluxLibs.STATIC_MATH_UTILS);
 
         return visitBinaryOp(exp1, exp2, ctx,
                 (e1, e2) -> String.format("estimateTetration(%s, %s)", e1, e2));
     }
 
-    public FluxParser.DeclarationContext ensureImport(ParseTree ctx, String importPath) {
-        return ensureImport(getProgram(ctx), importPath);
-    }
-    public FluxParser.DeclarationContext ensureImport(FluxCompiler.Program program, String importPath) {
-        if (program != null && !program.imports.contains(importPath)) {
-            var declarationCtx = program.addImport(importPath);
-
-            FluxParser.ImportDeclContext declCtx = declarationCtx.importDecl();
-
-            int indent = program.javaCode.indentLevel;
-
-            String javaString = visit(declCtx);
-
-            program.javaCode.indentLevel = 0;
-            program.javaCode.addLine(javaString, program.javaCode.lastImportsLine);
-            program.javaCode.indentLevel = indent;
-
-            int index = javaString.length()+1;
-
-            program.javaCode.lastImportsLine += index;
-            program.javaCode.checkDeclaration(declarationCtx, index);
-
-            return declarationCtx;
-        }
-        return null;
-    }
+//    public FluxParser.DeclarationContext ensureImport(ParseTree ctx, String importPath) {
+//        return ensureImport(getProgram(ctx), importPath);
+//    }
+//    public FluxParser.DeclarationContext ensureImport(FluxCompiler.Program program, String importPath) {
+//        if (program != null && !program.imports.contains(importPath)) {
+//            var declarationCtx = program.addImport(importPath);
+//
+//            FluxParser.ImportDeclContext declCtx = declarationCtx.importDecl();
+//
+//            int indent = program.javaCode.indentLevel;
+//
+//            String javaString = visit(declCtx);
+//
+//            program.javaCode.indentLevel = 0;
+//            program.javaCode.addLine(javaString, program.javaCode.lastImportsLine);
+//            program.javaCode.indentLevel = indent;
+//
+//            int index = javaString.length()+1;
+//
+//            program.javaCode.lastImportsLine += index;
+//            program.javaCode.checkDeclaration(declarationCtx, index);
+//
+//            return declarationCtx;
+//        }
+//        return null;
+//    }
 
     @Override
     public String visitFloorDivExpr(FloorDivExprContext ctx) {
