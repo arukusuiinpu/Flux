@@ -4,6 +4,7 @@ project by any means in this initial state._
 # 𓆝𓆟𓆞____𓆟𓆞𓆝
 
 ## Mock plans:
+- Implement an Directed Acyclic Graph Flux IR structure
 - More useful operators and aliases (Python, C#)
 - := operator
 - Better generics (C# inspired; includes single function parametrization for 2+ types)
