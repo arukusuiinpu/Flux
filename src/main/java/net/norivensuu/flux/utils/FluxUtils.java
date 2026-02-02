@@ -12,11 +12,13 @@ public class FluxUtils {
     public static <T> String CombineString(T... out) {
         StringBuilder builder = new StringBuilder();
         for (var o : out) {
-            if (o instanceof ParseTree parseTree) {
-                builder.append(parseTree.getText()).append(" ");
+            if (o != null) {
+                if (o instanceof ParseTree parseTree) {
+                    builder.append(parseTree.getText()).append(" ");
+                }
+                else builder.append(o).append(" ");
             }
-            else builder.append(o).append(" ");
         }
-        return builder.toString();
+        return builder.toString().stripLeading().stripTrailing();
     }
 }

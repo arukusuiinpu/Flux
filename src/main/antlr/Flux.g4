@@ -1,16 +1,8 @@
 grammar Flux;
 
-program:    (declaration | statement | terminator)* EOF ;
+program:    (statement | TERMINATOR+)* EOF ;
 
-declaration
-    :   importDecl terminator
-    |   functionDecl
-    |   varDecl terminator
-    ;
-
-type:   type '<' type? '>' | VAR | qualifiedId ;
-
-terminator : TERMINATOR+ ;
+type:   type '<' type? '>' | VAR | absoluteId ;
 
 accessModifier : 'public' | 'protected' | 'private' ;
 unfinishedMd : 'unfinished' | 'illegal' ;
@@ -24,8 +16,8 @@ nativeMd : 'native' ;
 strictfpMd : 'strictfp' ;
 
 importDecl
-    :   ('import' | 'using') qualifiedId (wildcard=WILDCARD)?
-    |   ('import' | 'using') 'static' qualifiedId (wildcard=WILDCARD)?
+    :   ('import' | 'using') absoluteId (wildcard=WILDCARD)?
+    |   ('import' | 'using') static='static' absoluteId (wildcard=WILDCARD)?
     ;
 
 variableModifiers
@@ -40,7 +32,7 @@ variableModifiers
 
 localVarDecl
     :   VAR? ID '=' expression                                 # LooselyTypedLocalVar
-    |   type ID ('=' expression)?                               # StrictlyTypedLocalVar
+    |   type ID ('=' expression)?                              # StrictlyTypedLocalVar
     ;
 
 varDecl
@@ -84,41 +76,42 @@ formalParameter
 voidBlock : FIGURE_BRACKET_L voidLines FIGURE_BRACKET_R ;
 returnBlock : FIGURE_BRACKET_L expressionLines FIGURE_BRACKET_R ;
 
-voidLines : (statement | voidReturn | terminator)* ;
-expressionLines : (statement | expressionReturn | terminator)* ;
+voidLines : (statement | voidReturn | TERMINATOR+)* ;
+expressionLines : (statement | expressionReturn | TERMINATOR+)* ;
 
 block
     :   voidBlock                                               # VoidBlockOption
     |   returnBlock                                             # ReturnBlockOption
     ;
 
-expressionReturn : 'return' expression terminator ;
-voidReturn : 'return' terminator ;
+expressionReturn : 'return' expression TERMINATOR+ ;
+voidReturn : 'return' TERMINATOR+ ;
 
 statement
-    :   functionDecl                                            # FunctionDeclStatement
+    :   importDecl TERMINATOR+                                  # ImportDeclStatement
+    |   functionDecl                                            # FunctionDeclStatement
     |   voidBlock                                               # VoidBlockStatement
-    |   'for' '(' localVarDecl terminator expression terminator assignmentStat ')' block # ForStatement
+    |   'for' '(' localVarDecl TERMINATOR+ expression TERMINATOR+ assignmentStat ')' block # ForStatement
     |   ('for' | 'foreach') '(' type? ID (':' | 'in') expression ')' block # ForeachStatement
-    |   'if' '(' expression ')' block terminator? (('else if' | 'elif') '(' expression ')' block)* terminator? ('else' else=block)? # IfStatement
-    |   varDecl terminator                                      # VarDeclStatement
-    |   assignmentStat terminator                               # AssignmentStatement
-    |   expression terminator                                   # ExpressionStatement
+    |   'if' '(' expression ')' block (TERMINATOR+)? (('else if' | 'elif') '(' expression ')' block)* (TERMINATOR+)? ('else' else=block)? # IfStatement
+    |   varDecl TERMINATOR+                                     # VarDeclStatement
+    |   assignmentStat TERMINATOR+                              # AssignmentStatement
+    |   expression TERMINATOR+                                  # ExpressionStatement
     |   expressionReturn                                        # ExpressionReturnStatement
     |   voidReturn                                              # VoidReturnStatement
     ;
 
 assignmentStat
-    :   qualifiedId operator=
+    :   absoluteId operator=
     ( '='   | '+='  | '-='  | '*='
     | '/='  | '%='  | '&='  | '^='
     | '|='  | '<<=' | '>>=' | '>>>='
     ) expression                                                # DefaultAssigmnent
-    |   qualifiedId operator='**=' expression                   # ExpAssigmnent
-    |   qualifiedId operator='***=' expression                  # TetrAssigmnent
-    |   qualifiedId operator='/%=' expression                   # FloorDivAssigmnent
-    |   qualifiedId operator='%/=' expression                   # CeilDivAssigmnent
-    |   qualifiedId operator=('++' | '--')                      # UnaryAssigmnent
+    |   absoluteId operator='**=' expression                    # ExpAssigmnent
+    |   absoluteId operator='***=' expression                   # TetrAssigmnent
+    |   absoluteId operator='/%=' expression                    # FloorDivAssigmnent
+    |   absoluteId operator='%/=' expression                    # CeilDivAssigmnent
+    |   absoluteId operator=('++' | '--')                       # UnaryAssigmnent
     ;
 
 expression
@@ -149,13 +142,13 @@ expression
     |   expression ('||' | 'or') expression                     # LogicalORExpr
     |   expression '?' expression ':' expression                # TernaryExpr
     |   'new' type '(' expressionList? ')' block?               # CreationExpr
-    |   qualifiedId '(' expressionList? ')'                     # FunctionCallExpr
-    |   qualifiedId '[' expression ']'                          # ArrayAccessExpr
+    |   absoluteId '(' expressionList? ')'                      # FunctionCallExpr
+    |   absoluteId '[' expression ']'                           # ArrayAccessExpr
     |   expression '.' expression                               # VariableAccessExpr
 
     // All of the expressions below must have an autoType in the
     // JavaCodeGeneratorVisitor.getAutoType(Object object) function
-    |   qualifiedId                                             # IdExpr
+    |   absoluteId                                              # IdExpr
     |   INT                                                     # IntExpr
     |   DECIMAL                                                 # DecimalExpr
     |   BOOL                                                    # BoolExpr
@@ -194,7 +187,7 @@ FIGURE_BRACKET_R : '%>' | '}' ;
 ID  :   SYMBOL (SYMBOL | [0-9])* ;
 SYMBOL : (LETTER | '_' | '$') ;
 TERMINATOR : ';' | ( '\r'? '\n' ) ;
-qualifiedId : ID ('.' ID)* ;
+absoluteId : ID ('.' ID)* ;
 
 fragment LETTER : [a-zA-Zа-яА-Я] ;
 

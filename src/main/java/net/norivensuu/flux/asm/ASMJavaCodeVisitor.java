@@ -1,10 +1,13 @@
-package net.norivensuu.flux.visitors;
+package net.norivensuu.flux.asm;
 
 import net.norivensuu.flux.FluxBaseVisitor;
 import net.norivensuu.flux.FluxParser;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+
+import static net.norivensuu.flux.utils.FluxUtils.*;
 
 public class ASMJavaCodeVisitor extends FluxBaseVisitor<Void> {
     private final ClassWriter cw;
@@ -13,6 +16,12 @@ public class ASMJavaCodeVisitor extends FluxBaseVisitor<Void> {
     public ASMJavaCodeVisitor(ClassWriter cw, String className) {
         this.cw = cw;
         this.className = className;
+    }
+
+    @Override
+    public Void visit(ParseTree tree) {
+        Print(tree.getClass().getSimpleName());
+        return super.visit(tree);
     }
 
     @Override
@@ -27,9 +36,12 @@ public class ASMJavaCodeVisitor extends FluxBaseVisitor<Void> {
         init.visitMaxs(1, 1);
         init.visitEnd();
 
-        super.visitProgram(ctx);
-
         cw.visitEnd();
-        return null;
+
+        for (var statement : ctx.statement()) {
+            visit(statement);
+        }
+
+        return super.visitProgram(ctx);
     }
 }

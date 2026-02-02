@@ -1,15 +1,11 @@
 package net.norivensuu.flux;
 
-import net.norivensuu.flux.visitors.ASMJavaCodeVisitor;
+import net.norivensuu.flux.structure.FluxNode;
+import net.norivensuu.flux.structure.program.ProgramNode;
 import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNodeImpl;
-import org.benf.cfr.reader.api.CfrDriver;
-import org.benf.cfr.reader.api.OutputSinkFactory;
 import org.objectweb.asm.ClassWriter;
 
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -40,7 +36,6 @@ public class FluxCompiler {
     public static class Program {
         public Set<String> imports = new HashSet<>();
         public FluxParser.ProgramContext ctx;
-        public JavaCodeGeneratorVisitor.JavaCode javaCode;
 
         public Program(FluxParser.ProgramContext ctx) {
             this.ctx = ctx;
@@ -65,48 +60,37 @@ public class FluxCompiler {
                         String fileName = p.toString();
                         if (fileName.endsWith(".flux")) {
                             compileFile(p);
-                        } else if (fileName.endsWith(".flux.meta")) {
-                            FluxMetadata defaultMeta = new FluxMetadata().appendDefault();
-                            metadataRegistry.put(p, defaultMeta);
                         }
                     });
         }
     }
 
     private static void compileFile(Path filePath) {
+        long startTime = System.nanoTime();
         System.out.println("\n--- Compiling: " + filePath.getFileName() + " ---");
         try {
             FluxMetadata metadata = buildClosestMetadata(filePath.getParent());
 
             InputStream input = new FileInputStream(filePath.toFile());
             CharStream cs = CharStreams.fromStream(input);
-            FluxParser.ProgramContext tree = getProgramContext(cs, metadata);
+            ProgramNode node = getProgramContext(cs, metadata);
 
             System.out.println("Successfully parsed and enriched " + filePath.getFileName());
 
             Path relativeToRoot = PROJECT_ROOT.relativize(filePath);
-            String fileNameNoExt = filePath.getFileName().toString().replace(".flux", "");
 
             String internalClassName = PROJECT_STRUCTURE_ROOT.resolve(relativeToRoot)
                     .toString()
                     .replace(".flux", "")
                     .replace("\\", "/");
 
-            String binaryClassName = internalClassName.replace("/", ".");
-
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
-            ASMJavaCodeVisitor generator = new ASMJavaCodeVisitor(cw, internalClassName);
-            generator.visit(tree);
+            FluxNode.visit(node);
 
             byte[] bytecode = cw.toByteArray();
 
-            String javaSource = decompile(bytecode, binaryClassName);
-            System.out.println("--- Decompiled Source ---");
-            System.out.println(javaSource);
-
-            writeGeneratedClassFile(filePath, bytecode);
-            loadAndExecute(bytecode, binaryClassName);
+            writeGeneratedClassFile(filePath, bytecode, startTime);
 
         } catch (IOException e) {
             System.err.println("Error processing file: " + filePath);
@@ -114,26 +98,27 @@ public class FluxCompiler {
         }
     }
 
-    private static FluxParser.ProgramContext getProgramContext(CharStream cs, FluxMetadata metadata) {
+    private static ProgramNode getProgramContext(CharStream cs, FluxMetadata metadata) {
         FluxLexer lexer = new FluxLexer(cs);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         FluxParser parser = new FluxParser(tokens);
 
         FluxParser.ProgramContext tree = parser.program();
+        ProgramNode node = new ProgramNode(tree);
 
         var program = new Program(tree);
         programRegistry.put(tree, program);
 
         if (metadata != null && metadata.imports != null) {
-            if (tree.children != null) {
-                for (ParseTree child : tree.children) {
-                    if (child instanceof FluxParser.DeclarationContext decl) {
-                        if (decl.importDecl() != null && decl.importDecl().qualifiedId() != null) {
-                            program.imports.add(decl.importDecl().qualifiedId().getText() + (decl.importDecl().wildcard != null ? decl.importDecl().wildcard.getText() : ".*"));
-                        }
-                    }
-                }
-            }
+//            if (tree.children != null) {
+//                for (ParseTree child : tree.children) {
+//                    if (child instanceof FluxParser.DeclarationContext decl) {
+//                        if (decl.importDecl() != null && decl.importDecl().qualifiedId() != null) {
+//                            program.imports.add(decl.importDecl().qualifiedId().getText() + (decl.importDecl().wildcard != null ? decl.importDecl().wildcard.getText() : ".*"));
+//                        }
+//                    }
+//                }
+//            }
 
             for (String importPath : metadata.imports) {
                 if (program.imports.contains(importPath)) {
@@ -144,7 +129,7 @@ public class FluxCompiler {
             }
         }
 
-        return tree;
+        return node;
     }
 
     private static FluxMetadata buildClosestMetadata(Path directory) {
@@ -254,7 +239,7 @@ public class FluxCompiler {
         }
     }
 
-    private static void writeGeneratedClassFile(Path originalFluxPath, byte[] bytecode) {
+    private static void writeGeneratedClassFile(Path originalFluxPath, byte[] bytecode, long startTime) {
         try {
             Path relativePath = FLUX_SOURCE_ROOT.relativize(originalFluxPath);
             Path relativeParent = relativePath.getParent();
@@ -270,35 +255,13 @@ public class FluxCompiler {
 
             Files.write(outputPath, bytecode);
 
-            System.out.println("Generated Class file: " + outputPath);
+            long endTime = System.nanoTime();
+            long durationNanos = endTime - startTime;
+            double durationMillis = durationNanos / 1_000_000.0;
+
+            System.out.printf("Generated Class file: %s in %.2f ms%n", outputPath, durationMillis);
         } catch (IOException e) {
             System.err.println("Error writing generated Class file: " + e.getMessage());
         }
-    }
-
-    private static String decompile(byte[] bytecode, String className) {
-        StringBuilder result = new StringBuilder();
-
-        OutputSinkFactory mySink = new OutputSinkFactory() {
-            @Override
-            public List<SinkClass> getSupportedSinks(SinkType sinkType, Collection<SinkClass> collection) {
-                return Collections.singletonList(SinkClass.DECOMPILED);
-            }
-
-            @Override
-            public <T> Sink<T> getSink(SinkType sinkType, SinkClass sinkClass) {
-                return item -> {
-                    if (sinkType == SinkType.JAVA) result.append(item);
-                };
-            }
-        };
-
-        CfrDriver driver = new CfrDriver.Builder()
-                .withOutputSink(mySink)
-                .build();
-
-        driver.analyse(Collections.singletonList(className.replace(".", "/") + ".class"));
-
-        return result.toString();
     }
 }

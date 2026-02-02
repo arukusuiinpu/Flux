@@ -17,23 +17,11 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitProgram(FluxParser.ProgramContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FluxParser#declaration}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitDeclaration(FluxParser.DeclarationContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link FluxParser#type}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitType(FluxParser.TypeContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#terminator}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTerminator(FluxParser.TerminatorContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#accessModifier}.
 	 * @param ctx the parse tree
@@ -215,6 +203,13 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitVoidReturn(FluxParser.VoidReturnContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ImportDeclStatement}
+	 * labeled alternative in {@link FluxParser#statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitImportDeclStatement(FluxParser.ImportDeclStatementContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code FunctionDeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
@@ -551,9 +546,9 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpressionList(FluxParser.ExpressionListContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FluxParser#qualifiedId}.
+	 * Visit a parse tree produced by {@link FluxParser#absoluteId}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitQualifiedId(FluxParser.QualifiedIdContext ctx);
+	T visitAbsoluteId(FluxParser.AbsoluteIdContext ctx);
 }

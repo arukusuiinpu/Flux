@@ -1,7 +1,10 @@
-package net.norivensuu.flux;
+package net.norivensuu.flux.ignored;
 
+import net.norivensuu.flux.FluxBaseVisitor;
+import net.norivensuu.flux.FluxCompiler;
+import net.norivensuu.flux.FluxLexer;
+import net.norivensuu.flux.FluxParser;
 import org.antlr.v4.runtime.CommonToken;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNodeImpl;
@@ -12,7 +15,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.norivensuu.flux.FluxParser.*;
-import static net.norivensuu.flux.utils.FluxUtils.*;
 
 public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
@@ -76,7 +78,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
-    public String visitProgram(FluxParser.ProgramContext ctx) {
+    public String visitProgram(ProgramContext ctx) {
         var program = FluxCompiler.getProgramRegistry().get(ctx);
         program.javaCode = new JavaCode();
 

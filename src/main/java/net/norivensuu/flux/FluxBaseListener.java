@@ -29,18 +29,6 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterDeclaration(FluxParser.DeclarationContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitDeclaration(FluxParser.DeclarationContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterType(FluxParser.TypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -48,18 +36,6 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitType(FluxParser.TypeContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterTerminator(FluxParser.TerminatorContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitTerminator(FluxParser.TerminatorContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -408,6 +384,18 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitVoidReturn(FluxParser.VoidReturnContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterImportDeclStatement(FluxParser.ImportDeclStatementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitImportDeclStatement(FluxParser.ImportDeclStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -989,13 +977,13 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterQualifiedId(FluxParser.QualifiedIdContext ctx) { }
+	@Override public void enterAbsoluteId(FluxParser.AbsoluteIdContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitQualifiedId(FluxParser.QualifiedIdContext ctx) { }
+	@Override public void exitAbsoluteId(FluxParser.AbsoluteIdContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

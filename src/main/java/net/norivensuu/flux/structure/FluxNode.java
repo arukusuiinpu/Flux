@@ -1,74 +1,59 @@
 package net.norivensuu.flux.structure;
 
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.RuleContext;
+import net.norivensuu.flux.FluxBaseVisitor;
+import net.norivensuu.flux.utils.FluxUtils;
+import net.norivensuu.flux.asm.ASMJavaCodeVisitor;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.benf.cfr.reader.util.annotation.Nullable;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static net.norivensuu.flux.utils.FluxUtils.CombineString;
+// TODO Eventually build "ANTLR4 -> (Object oriented DAG, actual Java classes) Flux IR Compiler (Development)
+//  + (Linearized Topological DAG Data-Oriented Array Structure) Flux IR (actual compiling) -> ASM" Instead of just DAG
+public abstract class FluxNode<T extends ParseTree> extends FluxBaseVisitor<Void> {
 
-public abstract class FluxNode {
-    public FluxNode(FluxNode parent) {
-        this.parent = parent;
+    public ASMJavaCodeVisitor asm;
+
+    public T context;
+
+    int logLevel = 0;
+
+    public FluxNode(T context, FluxNode<?> parent) {
+        super();
+
+        if (parent != null) {
+            addParent(parent);
+
+            logLevel = parent.logLevel + 1;
+        }
+
+        this.context = context;
     }
     public FluxNode() {
     }
 
-    public FluxNode parent = null;
-    public List<FluxNode> children = new ArrayList<>();
+    public List<FluxNode> parents = new ArrayList<>();
 
-    public String resolvedDescriptor;
-
-    public void setParent(FluxNode node) {
-        parent = node;
+    public void addParent(FluxNode node) {
+        parents.add(node);
+    }
+    public void resetParent(FluxNode node) {
+        parents.clear(); parents.add(node);
+    }
+    public void setParent(int index, FluxNode node) {
+        parents.set(index, node);
+    }
+    public void setParent(Class<? extends FluxNode> clazz, FluxNode node) {
+        parents.stream().filter((entry) -> entry.getClass().equals(clazz)).forEachOrdered((fluxNode) -> parents.set(parents.indexOf(fluxNode), node));
     }
 
-    public Set<FluxNode> getChildrenSet() {
-        return new HashSet<>(children);
-    }
-    public Set<FluxNode> getChildrenSet(Class<? extends FluxNode> clazz) {
-        return children.stream().filter((entry) -> entry.getClass().equals(clazz)).collect(Collectors.toSet());
-    }
-
-    public List<FluxNode> getChildrenList() {
-        return new ArrayList<>(children);
-    }
-    public List<FluxNode> getChildrenList(Class<? extends FluxNode> clazz) {
-        return children.stream().filter((entry) -> entry.getClass().equals(clazz)).collect(Collectors.toList());
-    }
-
-    @Nullable
-    public FluxNode getChild(Class<? extends FluxNode> clazz, int index) {
-        return getChildrenList(clazz).get(index);
+    public void getParent(int index) {
+        parents.get(index);
     }
     @Nullable
-    public FluxNode getFirstChild(Class<? extends FluxNode> clazz) {
-        return getChild(clazz, 0);
-    }
-    @Nullable
-    public FluxNode getLastChild(Class<? extends FluxNode> clazz) {
-        return getChild(clazz, getChildrenList(clazz).size()-1);
-    }
-    @Nullable
-    public FluxNode getFirstChild() {
-        return getChild(0);
-    }
-    @Nullable
-    public FluxNode getLastChild() {
-        return getChild(getChildrenList().size()-1);
-    }
-
-    public FluxNode getChild(int index) {
-        return getChildrenList().get(index);
-    }
-    public Class<? extends FluxNode> getChildClass(FluxNode node) {
-        return node.getClass();
+    public FluxNode getParent(Class<? extends FluxNode> clazz) {
+        return parents.stream().filter((entry) -> entry.getClass().equals(clazz)).findFirst().orElse(null);
     }
 
     public <T extends FluxNode> T addChild(Class<T> clazz) {
@@ -77,7 +62,7 @@ public abstract class FluxNode {
 
             T node = ctor.newInstance(this);
 
-            this.children.add(node);
+            node.addParent(this);
             return node;
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("Subclass " + clazz.getSimpleName() +
@@ -86,29 +71,42 @@ public abstract class FluxNode {
             throw new RuntimeException("Failed to instantiate " + clazz.getName(), e);
         }
     }
-    public void addChild(FluxNode node) {
-        node.setParent(this);
-        children.add(node);
-    }
-    public void setChild(int index, FluxNode newNode) {
-        if (index < 0 || index >= children.size()) {
-            throw new IndexOutOfBoundsException("Index " + index + " out of bounds for children list");
-        }
-
-        FluxNode oldChild = children.get(index);
-        if (oldChild != null) {
-            oldChild.parent = null;
-        }
-
-        newNode.parent = this;
-
-        children.set(index, newNode);
+    public <T extends FluxNode> void addChild(T node) {
+        node.addParent(this);
     }
 
     @Override
     public String toString() {
-        return String.format("%s(%s)", getClass().getName(), CombineString(children));
+        return String.format("%s(%s)", getClass().getName(), CombineString(parents));
     }
 
-    public abstract void accept(FluxIRVisitor visitor);
+    @Override
+    public Void visit(ParseTree tree) {
+        return super.visit(tree);
+    }
+
+    public Void visitSelf() {
+
+        String logLevelString = "";
+        if (logLevel > 0) {
+            logLevelString = "\t".repeat(logLevel-1) + "└─>";
+        }
+        Print(logLevelString, getClass().getSimpleName(), String.format("(%s)", context.getClass().getSimpleName()));
+
+        return visit(context);
+    }
+
+    public static Void visit(FluxNode<?> node) {
+        return node.visitSelf();
+    }
+
+    @SafeVarargs
+    protected static <T> void Print(T... out) {
+        FluxUtils.Print(out);
+    }
+
+    @SafeVarargs
+    protected static <T> String CombineString(T... out) {
+        return FluxUtils.CombineString(out);
+    }
 }
