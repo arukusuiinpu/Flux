@@ -1,20 +1,17 @@
 package net.norivensuu.flux.structure.program;
 
+import net.norivensuu.flux.FluxCompiler;
 import net.norivensuu.flux.FluxParser;
-import net.norivensuu.flux.structure.FluxIRVisitor;
 import net.norivensuu.flux.structure.FluxNode;
-import net.norivensuu.flux.structure.program.statement.StatementNode;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
-
-import java.util.Map;
-
-import static net.norivensuu.flux.utils.FluxUtils.*;
 
 public class ProgramNode extends FluxNode<FluxParser.ProgramContext> {
 
-    public ProgramNode(FluxParser.ProgramContext ctx) {
+    public ProgramNode(FluxCompiler.Program program, FluxParser.ProgramContext ctx) {
         super(ctx, null);
+        this.program = program;
+
+        program.IR.addNode(this);
     }
 
     @Override
@@ -23,6 +20,11 @@ public class ProgramNode extends FluxNode<FluxParser.ProgramContext> {
             visit(new StatementNode(statement, this));
         }
 
-        return super.visit(context);
+        var v = super.visit(context);
+
+        Print(program.IR.tree);
+        Print(program.IR.typeMap);
+
+        return v;
     }
 }

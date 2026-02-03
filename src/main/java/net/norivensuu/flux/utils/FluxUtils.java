@@ -2,6 +2,9 @@ package net.norivensuu.flux.utils;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+
 public class FluxUtils {
     @SafeVarargs
     public static <T> void Print(T... out) {
@@ -19,6 +22,14 @@ public class FluxUtils {
                 else builder.append(o).append(" ");
             }
         }
-        return builder.toString().stripLeading().stripTrailing();
+        return builder.toString().stripTrailing();
+    }
+
+    @SafeVarargs
+    public final <T> T firstNonNull(T... objects) {
+        return Stream.of(objects)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 }

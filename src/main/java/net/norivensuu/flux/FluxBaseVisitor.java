@@ -116,14 +116,7 @@ public class FluxBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements F
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx) { return visitChildren(ctx); }
+	@Override public T visitLocalVarDecl(FluxParser.LocalVarDeclContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -137,28 +130,28 @@ public class FluxBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements F
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFunctionModifiers(FluxParser.FunctionModifiersContext ctx) { return visitChildren(ctx); }
+	@Override public T visitMethodModifiers(FluxParser.MethodModifiersContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx) { return visitChildren(ctx); }
+	@Override public T visitRunnableMethodDecl(FluxParser.RunnableMethodDeclContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx) { return visitChildren(ctx); }
+	@Override public T visitVarMethodDecl(FluxParser.VarMethodDeclContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx) { return visitChildren(ctx); }
+	@Override public T visitFunctionMethodDecl(FluxParser.FunctionMethodDeclContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -242,7 +235,7 @@ public class FluxBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements F
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx) { return visitChildren(ctx); }
+	@Override public T visitMethodDeclStatement(FluxParser.MethodDeclStatementContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

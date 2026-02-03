@@ -407,14 +407,6 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return String.format("%s %s %s", leftExpr, operator, rightExpression);
     }
 
-    @SafeVarargs
-    public final <T> T firstNonNull(T... objects) {
-        return Stream.of(objects)
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
-    }
-
     @Override
     public String visitBitwiseANDExpr(FluxParser.BitwiseANDExprContext ctx) {
         return String.format("%s & %s", visit(ctx.expression(0)), visit(ctx.expression(1)));

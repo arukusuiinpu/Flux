@@ -185,25 +185,13 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx) { }
+	@Override public void enterLocalVarDecl(FluxParser.LocalVarDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx) { }
+	@Override public void exitLocalVarDecl(FluxParser.LocalVarDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -221,49 +209,49 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFunctionModifiers(FluxParser.FunctionModifiersContext ctx) { }
+	@Override public void enterMethodModifiers(FluxParser.MethodModifiersContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitFunctionModifiers(FluxParser.FunctionModifiersContext ctx) { }
+	@Override public void exitMethodModifiers(FluxParser.MethodModifiersContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx) { }
+	@Override public void enterRunnableMethodDecl(FluxParser.RunnableMethodDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx) { }
+	@Override public void exitRunnableMethodDecl(FluxParser.RunnableMethodDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx) { }
+	@Override public void enterVarMethodDecl(FluxParser.VarMethodDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx) { }
+	@Override public void exitVarMethodDecl(FluxParser.VarMethodDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx) { }
+	@Override public void enterFunctionMethodDecl(FluxParser.FunctionMethodDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx) { }
+	@Override public void exitFunctionMethodDecl(FluxParser.FunctionMethodDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -401,13 +389,13 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx) { }
+	@Override public void enterMethodDeclStatement(FluxParser.MethodDeclStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx) { }
+	@Override public void exitMethodDeclStatement(FluxParser.MethodDeclStatementContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

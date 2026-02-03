@@ -31,15 +31,15 @@ variableModifiers
     ;
 
 localVarDecl
-    :   VAR? ID '=' expression                                 # LooselyTypedLocalVar
-    |   type ID ('=' expression)?                              # StrictlyTypedLocalVar
+    :   VAR? ID '=' expression
+    |   type ID ('=' expression)?
     ;
 
 varDecl
     :   variableModifiers localVarDecl
     ;
 
-functionModifiers
+methodModifiers
     :
     accessModifier?
     unfinishedMd?
@@ -52,13 +52,13 @@ functionModifiers
     strictfpMd?
     ;
 
-functionDecl
-    :   functionModifiers
-        VOID ID '(' formalParameters? ')' voidBlock             # RunnableFunctionDecl
-    |   functionModifiers
-        VAR? ID '(' formalParameters? ')' returnBlock           # VarFunctionDecl
-    |   functionModifiers
-        type ID '(' formalParameters? ')' returnBlock           # ConsumerFunctionDecl
+methodDecl
+    :   methodModifiers
+        VOID ID '(' formalParameters? ')' voidBlock             # RunnableMethodDecl
+    |   methodModifiers
+        VAR? ID '(' formalParameters? ')' returnBlock           # VarMethodDecl
+    |   methodModifiers
+        type ID '(' formalParameters? ')' returnBlock           # FunctionMethodDecl
     ;
 
 
@@ -89,7 +89,7 @@ voidReturn : 'return' TERMINATOR+ ;
 
 statement
     :   importDecl TERMINATOR+                                  # ImportDeclStatement
-    |   functionDecl                                            # FunctionDeclStatement
+    |   methodDecl                                              # MethodDeclStatement
     |   voidBlock                                               # VoidBlockStatement
     |   'for' '(' localVarDecl TERMINATOR+ expression TERMINATOR+ assignmentStat ')' block # ForStatement
     |   ('for' | 'foreach') '(' type? ID (':' | 'in') expression ')' block # ForeachStatement

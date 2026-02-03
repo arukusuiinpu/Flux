@@ -148,29 +148,15 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitVariableModifiers(FluxParser.VariableModifiersContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code LooselyTypedLocalVar}
-	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * Enter a parse tree produced by {@link FluxParser#localVarDecl}.
 	 * @param ctx the parse tree
 	 */
-	void enterLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx);
+	void enterLocalVarDecl(FluxParser.LocalVarDeclContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code LooselyTypedLocalVar}
-	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * Exit a parse tree produced by {@link FluxParser#localVarDecl}.
 	 * @param ctx the parse tree
 	 */
-	void exitLooselyTypedLocalVar(FluxParser.LooselyTypedLocalVarContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code StrictlyTypedLocalVar}
-	 * labeled alternative in {@link FluxParser#localVarDecl}.
-	 * @param ctx the parse tree
-	 */
-	void enterStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code StrictlyTypedLocalVar}
-	 * labeled alternative in {@link FluxParser#localVarDecl}.
-	 * @param ctx the parse tree
-	 */
-	void exitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx);
+	void exitLocalVarDecl(FluxParser.LocalVarDeclContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FluxParser#varDecl}.
 	 * @param ctx the parse tree
@@ -182,51 +168,51 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitVarDecl(FluxParser.VarDeclContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link FluxParser#functionModifiers}.
+	 * Enter a parse tree produced by {@link FluxParser#methodModifiers}.
 	 * @param ctx the parse tree
 	 */
-	void enterFunctionModifiers(FluxParser.FunctionModifiersContext ctx);
+	void enterMethodModifiers(FluxParser.MethodModifiersContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link FluxParser#functionModifiers}.
+	 * Exit a parse tree produced by {@link FluxParser#methodModifiers}.
 	 * @param ctx the parse tree
 	 */
-	void exitFunctionModifiers(FluxParser.FunctionModifiersContext ctx);
+	void exitMethodModifiers(FluxParser.MethodModifiersContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code RunnableFunctionDecl}
-	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * Enter a parse tree produced by the {@code RunnableMethodDecl}
+	 * labeled alternative in {@link FluxParser#methodDecl}.
 	 * @param ctx the parse tree
 	 */
-	void enterRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx);
+	void enterRunnableMethodDecl(FluxParser.RunnableMethodDeclContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code RunnableFunctionDecl}
-	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * Exit a parse tree produced by the {@code RunnableMethodDecl}
+	 * labeled alternative in {@link FluxParser#methodDecl}.
 	 * @param ctx the parse tree
 	 */
-	void exitRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx);
+	void exitRunnableMethodDecl(FluxParser.RunnableMethodDeclContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code VarFunctionDecl}
-	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * Enter a parse tree produced by the {@code VarMethodDecl}
+	 * labeled alternative in {@link FluxParser#methodDecl}.
 	 * @param ctx the parse tree
 	 */
-	void enterVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx);
+	void enterVarMethodDecl(FluxParser.VarMethodDeclContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code VarFunctionDecl}
-	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * Exit a parse tree produced by the {@code VarMethodDecl}
+	 * labeled alternative in {@link FluxParser#methodDecl}.
 	 * @param ctx the parse tree
 	 */
-	void exitVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx);
+	void exitVarMethodDecl(FluxParser.VarMethodDeclContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code ConsumerFunctionDecl}
-	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * Enter a parse tree produced by the {@code FunctionMethodDecl}
+	 * labeled alternative in {@link FluxParser#methodDecl}.
 	 * @param ctx the parse tree
 	 */
-	void enterConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx);
+	void enterFunctionMethodDecl(FluxParser.FunctionMethodDeclContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code ConsumerFunctionDecl}
-	 * labeled alternative in {@link FluxParser#functionDecl}.
+	 * Exit a parse tree produced by the {@code FunctionMethodDecl}
+	 * labeled alternative in {@link FluxParser#methodDecl}.
 	 * @param ctx the parse tree
 	 */
-	void exitConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx);
+	void exitFunctionMethodDecl(FluxParser.FunctionMethodDeclContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FluxParser#formalParameters}.
 	 * @param ctx the parse tree
@@ -344,17 +330,17 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitImportDeclStatement(FluxParser.ImportDeclStatementContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code FunctionDeclStatement}
+	 * Enter a parse tree produced by the {@code MethodDeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx);
+	void enterMethodDeclStatement(FluxParser.MethodDeclStatementContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code FunctionDeclStatement}
+	 * Exit a parse tree produced by the {@code MethodDeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx);
+	void exitMethodDeclStatement(FluxParser.MethodDeclStatementContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code VoidBlockStatement}
 	 * labeled alternative in {@link FluxParser#statement}.

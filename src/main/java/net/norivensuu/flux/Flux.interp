@@ -215,8 +215,8 @@ importDecl
 variableModifiers
 localVarDecl
 varDecl
-functionModifiers
-functionDecl
+methodModifiers
+methodDecl
 formalParameters
 formalParameter
 voidBlock

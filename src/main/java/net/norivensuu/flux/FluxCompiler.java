@@ -1,5 +1,6 @@
 package net.norivensuu.flux;
 
+import net.norivensuu.flux.asm.ASMFluxIR;
 import net.norivensuu.flux.structure.FluxNode;
 import net.norivensuu.flux.structure.program.ProgramNode;
 import org.antlr.v4.runtime.*;
@@ -36,6 +37,8 @@ public class FluxCompiler {
     public static class Program {
         public Set<String> imports = new HashSet<>();
         public FluxParser.ProgramContext ctx;
+
+        public ASMFluxIR IR = new ASMFluxIR();
 
         public Program(FluxParser.ProgramContext ctx) {
             this.ctx = ctx;
@@ -104,9 +107,9 @@ public class FluxCompiler {
         FluxParser parser = new FluxParser(tokens);
 
         FluxParser.ProgramContext tree = parser.program();
-        ProgramNode node = new ProgramNode(tree);
 
         var program = new Program(tree);
+        ProgramNode node = new ProgramNode(program, tree);
         programRegistry.put(tree, program);
 
         if (metadata != null && metadata.imports != null) {

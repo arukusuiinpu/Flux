@@ -36,8 +36,8 @@ public class FluxParser extends Parser {
 		RULE_implementationModifier = 4, RULE_staticMd = 5, RULE_finalMd = 6, 
 		RULE_transientMd = 7, RULE_volatileMd = 8, RULE_synchronizedMd = 9, RULE_nativeMd = 10, 
 		RULE_strictfpMd = 11, RULE_importDecl = 12, RULE_variableModifiers = 13, 
-		RULE_localVarDecl = 14, RULE_varDecl = 15, RULE_functionModifiers = 16, 
-		RULE_functionDecl = 17, RULE_formalParameters = 18, RULE_formalParameter = 19, 
+		RULE_localVarDecl = 14, RULE_varDecl = 15, RULE_methodModifiers = 16, 
+		RULE_methodDecl = 17, RULE_formalParameters = 18, RULE_formalParameter = 19, 
 		RULE_voidBlock = 20, RULE_returnBlock = 21, RULE_voidLines = 22, RULE_expressionLines = 23, 
 		RULE_block = 24, RULE_expressionReturn = 25, RULE_voidReturn = 26, RULE_statement = 27, 
 		RULE_assignmentStat = 28, RULE_expression = 29, RULE_expressionList = 30, 
@@ -47,7 +47,7 @@ public class FluxParser extends Parser {
 			"program", "type", "accessModifier", "unfinishedMd", "implementationModifier", 
 			"staticMd", "finalMd", "transientMd", "volatileMd", "synchronizedMd", 
 			"nativeMd", "strictfpMd", "importDecl", "variableModifiers", "localVarDecl", 
-			"varDecl", "functionModifiers", "functionDecl", "formalParameters", "formalParameter", 
+			"varDecl", "methodModifiers", "methodDecl", "formalParameters", "formalParameter", 
 			"voidBlock", "returnBlock", "voidLines", "expressionLines", "block", 
 			"expressionReturn", "voidReturn", "statement", "assignmentStat", "expression", 
 			"expressionList", "absoluteId"
@@ -1059,59 +1059,29 @@ public class FluxParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class LocalVarDeclContext extends ParserRuleContext {
-		public LocalVarDeclContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_localVarDecl; }
-	 
-		public LocalVarDeclContext() { }
-		public void copyFrom(LocalVarDeclContext ctx) {
-			super.copyFrom(ctx);
-		}
-	}
-	@SuppressWarnings("CheckReturnValue")
-	public static class LooselyTypedLocalVarContext extends LocalVarDeclContext {
 		public TerminalNode ID() { return getToken(FluxParser.ID, 0); }
 		public ExpressionContext expression() {
 			return getRuleContext(ExpressionContext.class,0);
 		}
 		public TerminalNode VAR() { return getToken(FluxParser.VAR, 0); }
-		public LooselyTypedLocalVarContext(LocalVarDeclContext ctx) { copyFrom(ctx); }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterLooselyTypedLocalVar(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitLooselyTypedLocalVar(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitLooselyTypedLocalVar(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-	@SuppressWarnings("CheckReturnValue")
-	public static class StrictlyTypedLocalVarContext extends LocalVarDeclContext {
 		public TypeContext type() {
 			return getRuleContext(TypeContext.class,0);
 		}
-		public TerminalNode ID() { return getToken(FluxParser.ID, 0); }
-		public ExpressionContext expression() {
-			return getRuleContext(ExpressionContext.class,0);
+		public LocalVarDeclContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
 		}
-		public StrictlyTypedLocalVarContext(LocalVarDeclContext ctx) { copyFrom(ctx); }
+		@Override public int getRuleIndex() { return RULE_localVarDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterStrictlyTypedLocalVar(this);
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterLocalVarDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitStrictlyTypedLocalVar(this);
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitLocalVarDecl(this);
 		}
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitStrictlyTypedLocalVar(this);
+			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitLocalVarDecl(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -1125,7 +1095,6 @@ public class FluxParser extends Parser {
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,17,_ctx) ) {
 			case 1:
-				_localctx = new LooselyTypedLocalVarContext(_localctx);
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(145);
@@ -1147,7 +1116,6 @@ public class FluxParser extends Parser {
 				}
 				break;
 			case 2:
-				_localctx = new StrictlyTypedLocalVarContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(150);
@@ -1232,7 +1200,7 @@ public class FluxParser extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class FunctionModifiersContext extends ParserRuleContext {
+	public static class MethodModifiersContext extends ParserRuleContext {
 		public AccessModifierContext accessModifier() {
 			return getRuleContext(AccessModifierContext.class,0);
 		}
@@ -1260,28 +1228,28 @@ public class FluxParser extends Parser {
 		public StrictfpMdContext strictfpMd() {
 			return getRuleContext(StrictfpMdContext.class,0);
 		}
-		public FunctionModifiersContext(ParserRuleContext parent, int invokingState) {
+		public MethodModifiersContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_functionModifiers; }
+		@Override public int getRuleIndex() { return RULE_methodModifiers; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterFunctionModifiers(this);
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterMethodModifiers(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitFunctionModifiers(this);
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitMethodModifiers(this);
 		}
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitFunctionModifiers(this);
+			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitMethodModifiers(this);
 			else return visitor.visitChildren(this);
 		}
 	}
 
-	public final FunctionModifiersContext functionModifiers() throws RecognitionException {
-		FunctionModifiersContext _localctx = new FunctionModifiersContext(_ctx, getState());
-		enterRule(_localctx, 32, RULE_functionModifiers);
+	public final MethodModifiersContext methodModifiers() throws RecognitionException {
+		MethodModifiersContext _localctx = new MethodModifiersContext(_ctx, getState());
+		enterRule(_localctx, 32, RULE_methodModifiers);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -1390,21 +1358,21 @@ public class FluxParser extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
-	public static class FunctionDeclContext extends ParserRuleContext {
-		public FunctionDeclContext(ParserRuleContext parent, int invokingState) {
+	public static class MethodDeclContext extends ParserRuleContext {
+		public MethodDeclContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_functionDecl; }
+		@Override public int getRuleIndex() { return RULE_methodDecl; }
 	 
-		public FunctionDeclContext() { }
-		public void copyFrom(FunctionDeclContext ctx) {
+		public MethodDeclContext() { }
+		public void copyFrom(MethodDeclContext ctx) {
 			super.copyFrom(ctx);
 		}
 	}
 	@SuppressWarnings("CheckReturnValue")
-	public static class RunnableFunctionDeclContext extends FunctionDeclContext {
-		public FunctionModifiersContext functionModifiers() {
-			return getRuleContext(FunctionModifiersContext.class,0);
+	public static class RunnableMethodDeclContext extends MethodDeclContext {
+		public MethodModifiersContext methodModifiers() {
+			return getRuleContext(MethodModifiersContext.class,0);
 		}
 		public TerminalNode VOID() { return getToken(FluxParser.VOID, 0); }
 		public TerminalNode ID() { return getToken(FluxParser.ID, 0); }
@@ -1414,53 +1382,25 @@ public class FluxParser extends Parser {
 		public FormalParametersContext formalParameters() {
 			return getRuleContext(FormalParametersContext.class,0);
 		}
-		public RunnableFunctionDeclContext(FunctionDeclContext ctx) { copyFrom(ctx); }
+		public RunnableMethodDeclContext(MethodDeclContext ctx) { copyFrom(ctx); }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterRunnableFunctionDecl(this);
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterRunnableMethodDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitRunnableFunctionDecl(this);
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitRunnableMethodDecl(this);
 		}
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitRunnableFunctionDecl(this);
+			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitRunnableMethodDecl(this);
 			else return visitor.visitChildren(this);
 		}
 	}
 	@SuppressWarnings("CheckReturnValue")
-	public static class VarFunctionDeclContext extends FunctionDeclContext {
-		public FunctionModifiersContext functionModifiers() {
-			return getRuleContext(FunctionModifiersContext.class,0);
-		}
-		public TerminalNode ID() { return getToken(FluxParser.ID, 0); }
-		public ReturnBlockContext returnBlock() {
-			return getRuleContext(ReturnBlockContext.class,0);
-		}
-		public TerminalNode VAR() { return getToken(FluxParser.VAR, 0); }
-		public FormalParametersContext formalParameters() {
-			return getRuleContext(FormalParametersContext.class,0);
-		}
-		public VarFunctionDeclContext(FunctionDeclContext ctx) { copyFrom(ctx); }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterVarFunctionDecl(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitVarFunctionDecl(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitVarFunctionDecl(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-	@SuppressWarnings("CheckReturnValue")
-	public static class ConsumerFunctionDeclContext extends FunctionDeclContext {
-		public FunctionModifiersContext functionModifiers() {
-			return getRuleContext(FunctionModifiersContext.class,0);
+	public static class FunctionMethodDeclContext extends MethodDeclContext {
+		public MethodModifiersContext methodModifiers() {
+			return getRuleContext(MethodModifiersContext.class,0);
 		}
 		public TypeContext type() {
 			return getRuleContext(TypeContext.class,0);
@@ -1472,36 +1412,64 @@ public class FluxParser extends Parser {
 		public FormalParametersContext formalParameters() {
 			return getRuleContext(FormalParametersContext.class,0);
 		}
-		public ConsumerFunctionDeclContext(FunctionDeclContext ctx) { copyFrom(ctx); }
+		public FunctionMethodDeclContext(MethodDeclContext ctx) { copyFrom(ctx); }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterConsumerFunctionDecl(this);
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterFunctionMethodDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitConsumerFunctionDecl(this);
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitFunctionMethodDecl(this);
 		}
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitConsumerFunctionDecl(this);
+			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitFunctionMethodDecl(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	@SuppressWarnings("CheckReturnValue")
+	public static class VarMethodDeclContext extends MethodDeclContext {
+		public MethodModifiersContext methodModifiers() {
+			return getRuleContext(MethodModifiersContext.class,0);
+		}
+		public TerminalNode ID() { return getToken(FluxParser.ID, 0); }
+		public ReturnBlockContext returnBlock() {
+			return getRuleContext(ReturnBlockContext.class,0);
+		}
+		public TerminalNode VAR() { return getToken(FluxParser.VAR, 0); }
+		public FormalParametersContext formalParameters() {
+			return getRuleContext(FormalParametersContext.class,0);
+		}
+		public VarMethodDeclContext(MethodDeclContext ctx) { copyFrom(ctx); }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterVarMethodDecl(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitVarMethodDecl(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitVarMethodDecl(this);
 			else return visitor.visitChildren(this);
 		}
 	}
 
-	public final FunctionDeclContext functionDecl() throws RecognitionException {
-		FunctionDeclContext _localctx = new FunctionDeclContext(_ctx, getState());
-		enterRule(_localctx, 34, RULE_functionDecl);
+	public final MethodDeclContext methodDecl() throws RecognitionException {
+		MethodDeclContext _localctx = new MethodDeclContext(_ctx, getState());
+		enterRule(_localctx, 34, RULE_methodDecl);
 		int _la;
 		try {
 			setState(220);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,31,_ctx) ) {
 			case 1:
-				_localctx = new RunnableFunctionDeclContext(_localctx);
+				_localctx = new RunnableMethodDeclContext(_localctx);
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(188);
-				functionModifiers();
+				methodModifiers();
 				setState(189);
 				match(VOID);
 				setState(190);
@@ -1525,11 +1493,11 @@ public class FluxParser extends Parser {
 				}
 				break;
 			case 2:
-				_localctx = new VarFunctionDeclContext(_localctx);
+				_localctx = new VarMethodDeclContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(198);
-				functionModifiers();
+				methodModifiers();
 				setState(200);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
@@ -1561,11 +1529,11 @@ public class FluxParser extends Parser {
 				}
 				break;
 			case 3:
-				_localctx = new ConsumerFunctionDeclContext(_localctx);
+				_localctx = new FunctionMethodDeclContext(_localctx);
 				enterOuterAlt(_localctx, 3);
 				{
 				setState(210);
-				functionModifiers();
+				methodModifiers();
 				setState(211);
 				type(0);
 				setState(212);
@@ -2419,6 +2387,26 @@ public class FluxParser extends Parser {
 		}
 	}
 	@SuppressWarnings("CheckReturnValue")
+	public static class MethodDeclStatementContext extends StatementContext {
+		public MethodDeclContext methodDecl() {
+			return getRuleContext(MethodDeclContext.class,0);
+		}
+		public MethodDeclStatementContext(StatementContext ctx) { copyFrom(ctx); }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterMethodDeclStatement(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitMethodDeclStatement(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitMethodDeclStatement(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	@SuppressWarnings("CheckReturnValue")
 	public static class VoidBlockStatementContext extends StatementContext {
 		public VoidBlockContext voidBlock() {
 			return getRuleContext(VoidBlockContext.class,0);
@@ -2468,26 +2456,6 @@ public class FluxParser extends Parser {
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitForStatement(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-	@SuppressWarnings("CheckReturnValue")
-	public static class FunctionDeclStatementContext extends StatementContext {
-		public FunctionDeclContext functionDecl() {
-			return getRuleContext(FunctionDeclContext.class,0);
-		}
-		public FunctionDeclStatementContext(StatementContext ctx) { copyFrom(ctx); }
-		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).enterFunctionDeclStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof FluxListener ) ((FluxListener)listener).exitFunctionDeclStatement(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof FluxVisitor ) return ((FluxVisitor<? extends T>)visitor).visitFunctionDeclStatement(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -2581,11 +2549,11 @@ public class FluxParser extends Parser {
 				}
 				break;
 			case 2:
-				_localctx = new FunctionDeclStatementContext(_localctx);
+				_localctx = new MethodDeclStatementContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(288);
-				functionDecl();
+				methodDecl();
 				}
 				break;
 			case 3:
