@@ -1,10 +1,12 @@
-# 𓆝𓆟𓆞Flux𓆟𓆞𓆝
+## Flexible Object-Oriented to Data-Oriented Java
+
+# 𓆝𓆟𓆞Floodo Java𓆟𓆞𓆝
 _As you can guess this is not a professional\
 project by any means in this initial state._
-# 𓆝𓆟𓆞____𓆟𓆞𓆝
+# 𓆝𓆟𓆞___________𓆟𓆞𓆝
 
 ## Mock plans:
-- Implement a Directed Acyclic Graph Flux IR structure
+- Implement a Directed Acyclic Graph Floodo IR structure
 - More useful operators and aliases (Python, C#)
 - := operator
 - Better generics (C# inspired; includes single function parametrization for 2+ types)
@@ -20,7 +22,7 @@ project by any means in this initial state._
 
 _Sorted based on plausibility of quick implementation and urgency._
 
-## Example code:
+## Example code (Currently only master branch):
 ```
 import java.lang.* // Inherits Java libraries and importing structure
 using org.apfloat.Apfloat // Or you can use C# format if you want
@@ -84,12 +86,12 @@ void main() {
     Print(sampleString)
 }
 
-unfinished void unfinishedVoid() { // Flux also has a special comment function or variable modifier for unfinished parts of your code
+unfinished void unfinishedVoid() { // Floodo Java also has a special comment function or variable modifier for unfinished parts of your code
     unfinished float unfinishedFloat;
     illegal float illegalFloat; // I think you can find a few places this could be useful in
 }
 
-var varFunction1() { // Flux also allows loosely typed functions, it inherits the type from the return statement, ex. int
+var varFunction1() { // Floodo Java also allows loosely typed functions, it inherits the type from the return statement, ex. int
     return 1
 }
 
