@@ -5,7 +5,7 @@ float float1 = 1.0F // Java handles as float
 float float2 = 1.0 // Same here
 
 double double1 = 1.0 // Java handles as double
-double double2 = 1.0d // Same here
+double double2 = (1.0d) // Same here
 
 String str1 = '\'string1\'' // Directly uses Java String type, boolean also works
 string str2 = "\"string2\"" // The same type as before, just more consistent with built-ins

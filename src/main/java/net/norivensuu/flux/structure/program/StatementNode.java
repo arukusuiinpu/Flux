@@ -4,6 +4,8 @@ import net.norivensuu.flux.FluxParser;
 import net.norivensuu.flux.structure.FluxNode;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.util.List;
+
 public class StatementNode extends FluxNode<FluxParser.StatementContext> {
     public StatementNode(FluxParser.StatementContext statement, FluxNode<?> parent) {
         super(statement, parent);
@@ -17,23 +19,6 @@ public class StatementNode extends FluxNode<FluxParser.StatementContext> {
 
     public record VariableRecord(String variableModifiers, String type, String id, ExpressionNode expression) {}
     public VariableRecord variableRecord;
-
-
-    @Override
-    public Void visit(ParseTree tree) {
-        var v = super.visit(tree);
-
-        String info = "";
-        var record = firstNonNull(importRecord);
-        if (record != null) {
-            info = String.format("%stype: %s", "\t".repeat(this.logLevel), record);
-        }
-        if (!info.isEmpty()) {
-            Print(info);
-        }
-
-        return v;
-    }
 
     @Override
     public Void visitImportDeclStatement(FluxParser.ImportDeclStatementContext ctx) {
@@ -59,5 +44,10 @@ public class StatementNode extends FluxNode<FluxParser.StatementContext> {
 
         );
         return super.visit(ctx.varDecl().localVarDecl());
+    }
+
+    @Override
+    public Record[] getRecords() {
+        return new Record[] { importRecord, methodRecord, variableRecord };
     }
 }

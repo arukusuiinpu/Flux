@@ -84,24 +84,33 @@ public abstract class FluxNode<T extends ParseTree> extends FluxBaseVisitor<Void
 
     @Override
     public String toString() {
-        return String.format("%s(%s)", getClass().getName(), CombineString(parents));
+        return String.format("%s[%s](%s)", getClass().getSimpleName(), discoveryOrder, CombineString(parents));
     }
 
     @Override
     public Void visit(ParseTree tree) {
+        String info = "";
+        for (var record : getRecords()) {
+            if (record != null) {
+                info = String.format("%stype: %s", "\t".repeat(this.logLevel), record);
+            }
+        }
+        if (!info.isEmpty()) {
+            Print(info);
+        }
+
         return super.visit(tree);
     }
 
     public void visitSelf() {
-
         String logLevelString = "";
         if (logLevel > 0) {
             logLevelString = "\t".repeat(logLevel-1) + "└─> ";
         }
         if (context != null) {
-            Print(logLevelString + String.format("%s[%s]", getClass().getSimpleName(), discoveryOrder), String.format("(%s)", context.getClass().getSimpleName()));
-
             visit(context);
+
+            Print(logLevelString + String.format("%s[%s]", getClass().getSimpleName(), discoveryOrder), String.format("(%s)", context.getClass().getSimpleName()));
         }
     }
 
@@ -127,4 +136,6 @@ public abstract class FluxNode<T extends ParseTree> extends FluxBaseVisitor<Void
                 .findFirst()
                 .orElse(null);
     }
+
+    public abstract Record[] getRecords();
 }
