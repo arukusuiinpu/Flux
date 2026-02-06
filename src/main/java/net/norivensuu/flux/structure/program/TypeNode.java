@@ -24,9 +24,4 @@ public class TypeNode extends FluxNode<FluxParser.TypeContext> {
 
         return super.visitType(ctx);
     }
-
-    @Override
-    public Record[] getRecords() {
-        return new Record[0];
-    }
 }

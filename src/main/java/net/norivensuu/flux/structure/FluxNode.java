@@ -89,14 +89,16 @@ public abstract class FluxNode<T extends ParseTree> extends FluxBaseVisitor<Void
 
     @Override
     public Void visit(ParseTree tree) {
-        String info = "";
-        for (var record : getRecords()) {
-            if (record != null) {
-                info = String.format("%stype: %s", "\t".repeat(this.logLevel), record);
+        if (FluxCompiler.logTypes) {
+            String info = "";
+            for (var record : getRecords()) {
+                if (record != null) {
+                    info = String.format("%stype: %s", "\t".repeat(this.logLevel), record);
+                }
             }
-        }
-        if (!info.isEmpty()) {
-            Print(info);
+            if (!info.isEmpty()) {
+                Print(info);
+            }
         }
 
         return super.visit(tree);
@@ -105,7 +107,7 @@ public abstract class FluxNode<T extends ParseTree> extends FluxBaseVisitor<Void
     public void visitSelf() {
         String logLevelString = "";
         if (logLevel > 0) {
-            logLevelString = "\t".repeat(logLevel-1) + "└─> ";
+            logLevelString = "\t".repeat(logLevel-1) + "┌─> ";
         }
         if (context != null) {
             visit(context);
@@ -131,11 +133,20 @@ public abstract class FluxNode<T extends ParseTree> extends FluxBaseVisitor<Void
 
     @SafeVarargs
     protected final <V> V firstNonNull(V... objects) {
-        return Stream.of(objects)
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
+        return FluxUtils.firstNonNull(objects);
     }
 
-    public abstract Record[] getRecords();
+    public Record[] getRecords() {
+        return Arrays.stream(this.getClass().getDeclaredFields())
+                .filter(field -> field.getType().isRecord())
+                .map(field -> {
+                    try {
+                        return (Record) field.get(this);
+                    } catch (IllegalAccessException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toArray(Record[]::new);
+    }
 }

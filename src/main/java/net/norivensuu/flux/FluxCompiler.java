@@ -30,6 +30,8 @@ public class FluxCompiler {
     private static Map<Path, FluxMetadata> metadataRegistry = new HashMap<>();
     private static Map<FluxParser.ProgramContext, Program> programRegistry = new HashMap<>();
 
+    public static final boolean logTypes = false;
+
     public static Map<FluxParser.ProgramContext, Program> getProgramRegistry() {
         return programRegistry;
     }

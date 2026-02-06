@@ -45,9 +45,4 @@ public class StatementNode extends FluxNode<FluxParser.StatementContext> {
         );
         return super.visit(ctx.varDecl().localVarDecl());
     }
-
-    @Override
-    public Record[] getRecords() {
-        return new Record[] { importRecord, methodRecord, variableRecord };
-    }
 }

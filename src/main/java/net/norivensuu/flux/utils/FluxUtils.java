@@ -8,7 +8,9 @@ import java.util.stream.Stream;
 public class FluxUtils {
     @SafeVarargs
     public static <T> void Print(T... out) {
-        System.out.println(CombineString(out));
+        String string = CombineString(out);
+        if (!string.isEmpty())
+            System.out.println(string);
     }
 
     @SafeVarargs
@@ -26,7 +28,7 @@ public class FluxUtils {
     }
 
     @SafeVarargs
-    public final <T> T firstNonNull(T... objects) {
+    public static  <T> T firstNonNull(T... objects) {
         return Stream.of(objects)
                 .filter(Objects::nonNull)
                 .findFirst()

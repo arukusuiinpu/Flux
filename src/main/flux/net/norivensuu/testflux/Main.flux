@@ -1,7 +1,7 @@
 import java.lang.* // Inherits Java libraries and importing structure
 using org.apfloat.Apfloat // Or you can use C# format if you want
 
-float float1 = 1.0F // Java handles as float
+float float1 = (float)1.0F // Java handles as float
 float float2 = 1.0 // Same here
 
 double double1 = 1.0 // Java handles as double

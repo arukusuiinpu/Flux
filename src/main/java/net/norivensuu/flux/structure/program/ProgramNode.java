@@ -29,9 +29,4 @@ public class ProgramNode extends FluxNode<FluxParser.ProgramContext> {
 
         return v;
     }
-
-    @Override
-    public Record[] getRecords() {
-        return new Record[] {};
-    }
 }
