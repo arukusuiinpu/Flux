@@ -149,4 +149,8 @@ public abstract class FluxNode<T extends ParseTree> extends FluxBaseVisitor<Void
                 .filter(Objects::nonNull)
                 .toArray(Record[]::new);
     }
+
+    public Record getRecord() {
+        return firstNonNull(getRecords());
+    }
 }
