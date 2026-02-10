@@ -13,25 +13,25 @@ public class ExpressionNode extends FluxNode<FluxParser.ExpressionContext> {
 
     public Record getExpression() { return firstNonNull(getRecords()); }
 
-    public record ParenthesizedExpressionRecord(ExpressionNode expression) {}
+    public record ParenthesizedExpressionRecord(Record expression) {}
     public ParenthesizedExpressionRecord parenthesizedExpressionRecord;
 
-    public record ArrayExpressionRecord(List<ExpressionNode> expressions) {}
+    public record ArrayExpressionRecord(List<Record> expressions) {}
     public ArrayExpressionRecord arrayExpressionRecord;
 
-    public record PostfixExpressionRecord(ExpressionNode expression, String operator) {}
+    public record PostfixExpressionRecord(Record expression, String operator) {}
     public PostfixExpressionRecord postfixExpressionRecord;
 
-    public record CastExpressionRecord(TypeNode type, ExpressionNode expression) {}
+    public record CastExpressionRecord(TypeNode type, Record expression) {}
     public CastExpressionRecord castExpressionRecord;
 
-    public record ExpExpressionRecord(ExpressionNode left_expression, ExpressionNode right_expression) {}
+    public record ExpExpressionRecord(Record left_expression, Record right_expression) {}
     public ExpExpressionRecord expExpressionRecord;
 
-    public record TetrExpressionRecord(ExpressionNode left_expression, ExpressionNode right_expression) {}
+    public record TetrExpressionRecord(Record left_expression, Record right_expression) {}
     public TetrExpressionRecord tetrExpressionRecord;
 
-    public record UnaryExpressionRecord(String operator, ExpressionNode expression) {}
+    public record UnaryExpressionRecord(String operator, Record expression) {}
     public UnaryExpressionRecord unaryExpressionRecord;
 
     public record NotExpressionRecord(ExpressionNode expression) {}
@@ -41,15 +41,15 @@ public class ExpressionNode extends FluxNode<FluxParser.ExpressionContext> {
     public Void visitParenthesizedExpr(FluxParser.ParenthesizedExprContext ctx) {
         var expression = new ExpressionNode(ctx.expression(), this);
 
-        parenthesizedExpressionRecord = new ParenthesizedExpressionRecord(expression);
+        parenthesizedExpressionRecord = new ParenthesizedExpressionRecord(expression.getRecord());
         return super.visitParenthesizedExpr(ctx);
     }
 
     @Override
     public Void visitArrayExpr(FluxParser.ArrayExprContext ctx) {
-        var expressions = new ArrayList<ExpressionNode>();
+        var expressions = new ArrayList<Record>();
         for (var expressionCtx : ctx.expressionList().expression()) {
-            expressions.add(visit(new ExpressionNode(expressionCtx, this)));
+            expressions.add(visit(new ExpressionNode(expressionCtx, this)).getRecord());
         }
         arrayExpressionRecord = new ArrayExpressionRecord(expressions);
         return super.visitArrayExpr(ctx);
@@ -59,7 +59,7 @@ public class ExpressionNode extends FluxNode<FluxParser.ExpressionContext> {
     public Void visitPostfixExpr(FluxParser.PostfixExprContext ctx) {
         var expression = visit(new ExpressionNode(ctx.expression(), this));
 
-        postfixExpressionRecord = new PostfixExpressionRecord(expression, ctx.operator.getText());
+        postfixExpressionRecord = new PostfixExpressionRecord(expression.getRecord(), ctx.operator.getText());
         return super.visitPostfixExpr(ctx);
     }
 
@@ -68,7 +68,7 @@ public class ExpressionNode extends FluxNode<FluxParser.ExpressionContext> {
         var type = visit(new TypeNode(ctx.type(), this));
         var expression = visit(new ExpressionNode(ctx.expression(), this));
 
-        castExpressionRecord = new CastExpressionRecord(type, expression);
+        castExpressionRecord = new CastExpressionRecord(type, expression.getRecord());
         return super.visitCastExpr(ctx);
     }
 
@@ -77,7 +77,7 @@ public class ExpressionNode extends FluxNode<FluxParser.ExpressionContext> {
         var left_expression = visit(new ExpressionNode(ctx.expression(0), this));
         var right_expression = visit(new ExpressionNode(ctx.expression(1), this));
 
-        expExpressionRecord = new ExpExpressionRecord(left_expression, right_expression);
+        expExpressionRecord = new ExpExpressionRecord(left_expression.getRecord(), right_expression.getRecord());
         return super.visitExpExpr(ctx);
     }
 
@@ -86,7 +86,7 @@ public class ExpressionNode extends FluxNode<FluxParser.ExpressionContext> {
         var left_expression = visit(new ExpressionNode(ctx.expression(0), this));
         var right_expression = visit(new ExpressionNode(ctx.expression(1), this));
 
-        tetrExpressionRecord = new TetrExpressionRecord(left_expression, right_expression);
+        tetrExpressionRecord = new TetrExpressionRecord(left_expression.getRecord(), right_expression.getRecord());
         return super.visitTetrExpr(ctx);
     }
 
@@ -94,7 +94,7 @@ public class ExpressionNode extends FluxNode<FluxParser.ExpressionContext> {
     public Void visitUnaryExpr(FluxParser.UnaryExprContext ctx) {
         var expression = visit(new ExpressionNode(ctx.expression(), this));
 
-        unaryExpressionRecord = new UnaryExpressionRecord(ctx.operator.getText(), expression);
+        unaryExpressionRecord = new UnaryExpressionRecord(ctx.operator.getText(), expression.getRecord());
         return super.visitUnaryExpr(ctx);
     }
 

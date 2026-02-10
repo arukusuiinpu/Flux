@@ -31,8 +31,6 @@ public abstract class FluxNode<T extends ParseTree> extends FluxBaseVisitor<Void
             addParent(parent);
 
             logLevel = parent.logLevel + 1;
-
-            program.IR.addNode(this);
         }
 
         this.context = context;
@@ -114,6 +112,7 @@ public abstract class FluxNode<T extends ParseTree> extends FluxBaseVisitor<Void
 
             Print(logLevelString + String.format("%s[%s]", getClass().getSimpleName(), discoveryOrder), String.format("(%s)", context.getClass().getSimpleName()));
         }
+        program.IR.addNode(this);
     }
 
     public static <V extends FluxNode<?>> V visit(V node) {

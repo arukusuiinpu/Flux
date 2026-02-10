@@ -24,7 +24,7 @@ public class ProgramNode extends FluxNode<FluxParser.ProgramContext> {
             visit(new StatementNode(statement, this));
         }
 
-        Print(program.IR.tree);
+//        Print(program.IR.tree);
         Print(program.IR.typeMap);
 
         return v;

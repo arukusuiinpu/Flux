@@ -17,7 +17,7 @@ public class StatementNode extends FluxNode<FluxParser.StatementContext> {
     public record MethodRecord(String methodModifiers, String type, boolean wildcard) {}
     public MethodRecord methodRecord;
 
-    public record VariableRecord(String variableModifiers, String type, String id, ExpressionNode expression) {}
+    public record VariableRecord(String variableModifiers, String type, String id, Record expression) {}
     public VariableRecord variableRecord;
 
     @Override
@@ -40,7 +40,7 @@ public class StatementNode extends FluxNode<FluxParser.StatementContext> {
                         ctx.varDecl().localVarDecl().type().getText() :
                         "var",
                 ctx.varDecl().localVarDecl().ID().getText(),
-                expression
+                expression.getRecord()
 
         );
         return super.visit(ctx.varDecl().localVarDecl());
