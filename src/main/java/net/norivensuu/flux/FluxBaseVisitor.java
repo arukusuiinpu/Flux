@@ -459,6 +459,13 @@ public class FluxBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements F
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitFStringExpr(FluxParser.FStringExprContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitShiftExpr(FluxParser.ShiftExprContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -579,6 +586,13 @@ public class FluxBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements F
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitExpressionList(FluxParser.ExpressionListContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitFstring(FluxParser.FstringContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

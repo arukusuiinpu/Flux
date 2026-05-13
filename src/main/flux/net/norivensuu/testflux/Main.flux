@@ -47,15 +47,17 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 }
 
 void main() {
-    Print((double1 *** double2).doubleValue()); // Tetration
+    Print(double1 *** double2); // Tetration
 
     var test = SampleFunction(float1, float2)
 
+    i = 0
+
     string SampleString(string name) { // Allows nested functions
-        return String.format("Hello, %s!", name)
+        return f"Hello, {name}! How are you today my little fella? The i is: {i++}"
     }
 
-    string sampleString = SampleString("random user") + test
+    string sampleString = SampleString("random user") + "test" // Somehow this doesn't work and I have no fucking clue why
 
     Print(sampleString)
 }

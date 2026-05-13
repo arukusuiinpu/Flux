@@ -721,6 +721,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return visitCeilDiv(ctx.expression(0), ctx.expression(1), ctx);
     }
 
+    public String visitCeilDiv(Object exp1, Object exp2, ParseTree ctx) {
+        return visitBinaryOp(exp1, exp2, ctx,
+                (e1, e2) -> String.format("Math.ceil(%s / %s)", e1, e2));
+    }
+
     @Override
     public String visitCreationExpr(CreationExprContext ctx) {
         String args = "";
@@ -748,11 +753,6 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
 
         return String.format("new %s(%s) %s", typeString, args, block);
-    }
-
-    public String visitCeilDiv(Object exp1, Object exp2, ParseTree ctx) {
-        return visitBinaryOp(exp1, exp2, ctx,
-                (e1, e2) -> String.format("Math.ceil(%s / %s)", e1, e2));
     }
 
     public String getCastString(ParseTree ctx, Object... expressions) {
@@ -866,6 +866,22 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitStringExpr(StringExprContext ctx) {
         return String.format("\"%s\"", ctx.getText().substring(1, ctx.getText().length()-1)).replace("\\'", "'");
+    }
+
+    @Override
+    public String visitFStringExpr(FStringExprContext ctx) {
+        String st = ctx.fstring().STRING().getText();
+        st = String.format("\"%s\"", st.substring(1, st.length()-1)).replace("\\'", "'");
+
+        String g = "";
+
+        while (st.contains("{") && st.contains("}")) {
+            g += ", ";
+            g += st.substring(st.indexOf("{") + 1, st.indexOf("}"));
+            st = st.substring(0, st.indexOf("{")) + "%s" + st.substring(st.indexOf("}")+1);
+        }
+
+        return "String.format(" + st + g + ")";
     }
 
     @Override

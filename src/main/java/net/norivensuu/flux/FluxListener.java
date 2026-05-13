@@ -712,6 +712,18 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitNotExpr(FluxParser.NotExprContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code FStringExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterFStringExpr(FluxParser.FStringExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code FStringExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitFStringExpr(FluxParser.FStringExprContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code ShiftExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
@@ -925,6 +937,16 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExpressionList(FluxParser.ExpressionListContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#fstring}.
+	 * @param ctx the parse tree
+	 */
+	void enterFstring(FluxParser.FstringContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#fstring}.
+	 * @param ctx the parse tree
+	 */
+	void exitFstring(FluxParser.FstringContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FluxParser#qualifiedId}.
 	 * @param ctx the parse tree

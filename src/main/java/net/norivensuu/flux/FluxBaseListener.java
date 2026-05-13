@@ -773,6 +773,18 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterFStringExpr(FluxParser.FStringExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFStringExpr(FluxParser.FStringExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterShiftExpr(FluxParser.ShiftExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -984,6 +996,18 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExpressionList(FluxParser.ExpressionListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFstring(FluxParser.FstringContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFstring(FluxParser.FstringContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

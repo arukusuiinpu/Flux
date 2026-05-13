@@ -159,17 +159,24 @@ expression
     |   INT                                                     # IntExpr
     |   DECIMAL                                                 # DecimalExpr
     |   BOOL                                                    # BoolExpr
+    |   fstring                                                 # FStringExpr
     |   STRING                                                  # StringExpr
     |   CHAR                                                    # CharExpr
     ;
 
 expressionList : expression (',' expression)* ;
 
-CHAR : '\'' ( ESC_SEQ | ~[\\\r\n'] ) '\'' ;
+fragment STRING_SYMBOL : ( ESC_SEQ | ~[\\\r\n'] ) ;
+
+CHAR : '\'' STRING_SYMBOL '\'' ;
 
 STRING
-    : '"'  ( ESC_SEQ | ~[\\\r\n"] )* '"'
-    | '\'' ( ESC_SEQ | ~[\\\r\n'] )* '\''
+    : '\'' STRING_SYMBOL* '\''
+    | '"'  STRING_SYMBOL* '"'
+    ;
+
+fstring
+    : 'f' STRING
     ;
 
 fragment ESC_SEQ

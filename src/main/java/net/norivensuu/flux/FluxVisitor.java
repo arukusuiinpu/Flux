@@ -426,6 +426,13 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitNotExpr(FluxParser.NotExprContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code FStringExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFStringExpr(FluxParser.FStringExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code ShiftExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
@@ -550,6 +557,12 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExpressionList(FluxParser.ExpressionListContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FluxParser#fstring}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFstring(FluxParser.FstringContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#qualifiedId}.
 	 * @param ctx the parse tree
