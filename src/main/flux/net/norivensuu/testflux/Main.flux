@@ -14,6 +14,8 @@ char char1 = 's' // Single symbol, technical or '' strings are treated as chars
 
 bool bool1;
 
+j = 0l;
+
 var var1 = 1.0F // Handles value variables
 var2 = 1.0F // Var is optional
 
@@ -43,7 +45,7 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
         Print(element, 'Java foreach')
     }
 
-    return bool1
+    return 1 < 2 < 5 ? False : True
 }
 
 void main() {
@@ -54,10 +56,10 @@ void main() {
     i = 0
 
     string SampleString(string name) { // Allows nested functions
-        return f"Hello, {name}! How are you today my little fella? The i is: {i++}"
+        return f"Hello, {name}! How are you today my little fella? The i is: {i}"
     }
 
-    string sampleString = SampleString("random user") + "test" // Somehow this doesn't work and I have no fucking clue why
+    string sampleString = SampleString("random user") + "\n" + test
 
     Print(sampleString)
 }

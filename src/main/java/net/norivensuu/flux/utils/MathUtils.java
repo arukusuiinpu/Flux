@@ -13,7 +13,7 @@ public class MathUtils {
     /**
      * Please reframe from using this function or '***' operator in general for any purposes, other than educational
      * Unsafely estimates a ^^ b using linear approximation.
-     * @param a The base (BigFloat)
+     * @param a The base (Apfloat)
      * @param b The height (can be fractional)
      */
     // Why is this here??? You see...

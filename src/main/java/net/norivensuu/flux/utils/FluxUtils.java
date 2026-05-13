@@ -14,4 +14,9 @@ public class FluxUtils {
         }
         System.out.println(builder);
     }
+
+    @SafeVarargs
+    public static <T> void print(T... out) {
+        Print(out);
+    }
 }

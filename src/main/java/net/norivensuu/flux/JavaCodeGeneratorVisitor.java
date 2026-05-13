@@ -341,7 +341,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitIntExpr(FluxParser.IntExprContext ctx) {
-        return ctx.INT().getText();
+        return ctx.INT().getText().toUpperCase();
     }
 
     @Override
@@ -361,7 +361,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitTernaryExpr(FluxParser.TernaryExprContext ctx) {
-        return String.format("((%s) ? %s : %s)", visit(ctx.expression(0)), visit(ctx.expression(1)), visit(ctx.expression(2)));
+        return String.format("((%s) ? %s : %s)", visit(ctx.condition), visit(ctx.true_), visit(ctx.false_));
     }
 
     @Override
@@ -785,7 +785,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             type = expr.getText();
         }
         else if (object instanceof IntExprContext expr) {
-            type = "int";
+            type = expr.getText().toLowerCase().contains("l") ? "long" : "int";
         }
         else if (object instanceof DecimalExprContext expr) {
             if (expr.getText().toLowerCase().contains("f")) {
@@ -860,7 +860,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitBoolExpr(FluxParser.BoolExprContext ctx) {
-        return ctx.getText();
+        return ctx.getText().toLowerCase();
     }
 
     @Override
@@ -1190,6 +1190,16 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return visitVar(ctx, "", false);
     }
 
+    @Override
+    public String visitLooselyTypedLocalVars(LooselyTypedLocalVarsContext ctx) {
+        return visitVar(ctx, "", false);
+    }
+
+    @Override
+    public String visitStrictlyTypedLocalVars(StrictlyTypedLocalVarsContext ctx) {
+        return visitVar(ctx, "", false);
+    }
+
     public String visitVar(LocalVarDeclContext ctx, String variableModifiers, boolean globalDecl) {
         var localType = simplifyLocalVarType(ctx);
 
@@ -1201,8 +1211,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         if (ctx instanceof StrictlyTypedLocalVarContext localCtx) {
             expression = localCtx.expression();
         }
-        else
-        if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
+        else if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
             expression = localCtx.expression();
         }
 

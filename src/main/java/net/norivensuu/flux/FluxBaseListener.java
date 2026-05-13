@@ -41,6 +41,18 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterClassName(FluxParser.ClassNameContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitClassName(FluxParser.ClassNameContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterType(FluxParser.TypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -233,6 +245,42 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterLooselyTypedLocalVars(FluxParser.LooselyTypedLocalVarsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLooselyTypedLocalVars(FluxParser.LooselyTypedLocalVarsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStrictlyTypedLocalVars(FluxParser.StrictlyTypedLocalVarsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStrictlyTypedLocalVars(FluxParser.StrictlyTypedLocalVarsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterIdList(FluxParser.IdListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIdList(FluxParser.IdListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterVarDecl(FluxParser.VarDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -252,6 +300,18 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitFunctionModifiers(FluxParser.FunctionModifiersContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterClassDecl(FluxParser.ClassDeclContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitClassDecl(FluxParser.ClassDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -689,6 +749,18 @@ public class FluxBaseListener implements FluxListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterGeneratorExpr(FluxParser.GeneratorExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitGeneratorExpr(FluxParser.GeneratorExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterEqualityExpr(FluxParser.EqualityExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -840,6 +912,18 @@ public class FluxBaseListener implements FluxListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitIdExpr(FluxParser.IdExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterWalrusExpr(FluxParser.WalrusExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitWalrusExpr(FluxParser.WalrusExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -28,6 +28,16 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitDeclaration(FluxParser.DeclarationContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link FluxParser#className}.
+	 * @param ctx the parse tree
+	 */
+	void enterClassName(FluxParser.ClassNameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#className}.
+	 * @param ctx the parse tree
+	 */
+	void exitClassName(FluxParser.ClassNameContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link FluxParser#type}.
 	 * @param ctx the parse tree
 	 */
@@ -192,6 +202,40 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code LooselyTypedLocalVars}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 */
+	void enterLooselyTypedLocalVars(FluxParser.LooselyTypedLocalVarsContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code LooselyTypedLocalVars}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 */
+	void exitLooselyTypedLocalVars(FluxParser.LooselyTypedLocalVarsContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code StrictlyTypedLocalVars}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 */
+	void enterStrictlyTypedLocalVars(FluxParser.StrictlyTypedLocalVarsContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code StrictlyTypedLocalVars}
+	 * labeled alternative in {@link FluxParser#localVarDecl}.
+	 * @param ctx the parse tree
+	 */
+	void exitStrictlyTypedLocalVars(FluxParser.StrictlyTypedLocalVarsContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#idList}.
+	 * @param ctx the parse tree
+	 */
+	void enterIdList(FluxParser.IdListContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#idList}.
+	 * @param ctx the parse tree
+	 */
+	void exitIdList(FluxParser.IdListContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link FluxParser#varDecl}.
 	 * @param ctx the parse tree
 	 */
@@ -211,6 +255,16 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitFunctionModifiers(FluxParser.FunctionModifiersContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FluxParser#classDecl}.
+	 * @param ctx the parse tree
+	 */
+	void enterClassDecl(FluxParser.ClassDeclContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FluxParser#classDecl}.
+	 * @param ctx the parse tree
+	 */
+	void exitClassDecl(FluxParser.ClassDeclContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code RunnableFunctionDecl}
 	 * labeled alternative in {@link FluxParser#functionDecl}.
@@ -628,6 +682,18 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitPostfixExpr(FluxParser.PostfixExprContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code GeneratorExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterGeneratorExpr(FluxParser.GeneratorExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code GeneratorExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitGeneratorExpr(FluxParser.GeneratorExprContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code EqualityExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
@@ -783,6 +849,18 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitIdExpr(FluxParser.IdExprContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code WalrusExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterWalrusExpr(FluxParser.WalrusExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code WalrusExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitWalrusExpr(FluxParser.WalrusExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code ArrayAccessExpr}
 	 * labeled alternative in {@link FluxParser#expression}.

@@ -3,11 +3,13 @@ grammar Flux;
 program:    (declaration | statement | terminator)* EOF ;
 
 declaration
-    :   importDecl terminator
+    :   importDecl terminator?
+    |   classDecl
     |   functionDecl
-    |   varDecl terminator
+    |   varDecl terminator?
     ;
 
+className: className '<' className? '>' | qualifiedId ;
 type:   type '<' type? '>' | VAR | qualifiedId ;
 
 terminator : TERMINATOR+ ;
@@ -40,8 +42,12 @@ variableModifiers
 
 localVarDecl
     :   VAR? ID '=' expression                                 # LooselyTypedLocalVar
-    |   type ID ('=' expression)?                               # StrictlyTypedLocalVar
+    |   type ID ('=' expression)?                              # StrictlyTypedLocalVar
+    |   VAR? idList '=' expression                             # LooselyTypedLocalVars
+    |   type idList ('=' expression)?                          # StrictlyTypedLocalVars
     ;
+
+idList : ID (',' ID)* ;
 
 varDecl
     :   variableModifiers localVarDecl
@@ -58,6 +64,11 @@ functionModifiers
     synchronizedMd?
     nativeMd?
     strictfpMd?
+    ;
+
+classDecl
+    :   functionModifiers
+        'class' className (':' | className)? voidBlock
     ;
 
 functionDecl
@@ -81,11 +92,17 @@ formalParameter
 
 // TODO allow for statements to not need the last terminator
 //  (ex. string NewFunc(string str) { return str.repeat(7); System.out.println(wow) } )
-voidBlock : FIGURE_BRACKET_L voidLines FIGURE_BRACKET_R ;
-returnBlock : FIGURE_BRACKET_L expressionLines FIGURE_BRACKET_R ;
+voidBlock
+    : FIGURE_BRACKET_L voidLines FIGURE_BRACKET_R
+    | ':' NL? expressionLines NL?
+    ;
+returnBlock
+    : FIGURE_BRACKET_L expressionLines FIGURE_BRACKET_R
+    | ':' NL? expressionLines NL?
+    ;
 
-voidLines : (statement | voidReturn | terminator)* ;
-expressionLines : (statement | expressionReturn | terminator)* ;
+voidLines : (statement | voidReturn | terminator)*;
+expressionLines : (statement | expressionReturn | terminator)*;
 
 block
     :   voidBlock                                               # VoidBlockOption
@@ -100,10 +117,10 @@ statement
     |   voidBlock                                               # VoidBlockStatement
     |   'for' '(' localVarDecl terminator expression terminator assignmentStat ')' block # ForStatement
     |   ('for' | 'foreach') '(' type? ID (':' | 'in') expression ')' block # ForeachStatement
-    |   'if' '(' expression ')' block terminator? (('else if' | 'elif') '(' expression ')' block)* terminator? ('else' else=block)? # IfStatement
-    |   varDecl terminator                                      # VarDeclStatement
-    |   assignmentStat terminator                               # AssignmentStatement
-    |   expression terminator                                   # ExpressionStatement
+    |   'if' expression block terminator? (('else if' | 'elif') expression block)* terminator? ('else' else=block)? # IfStatement
+    |   varDecl terminator?                                      # VarDeclStatement
+    |   assignmentStat terminator?                               # AssignmentStatement
+    |   expression terminator?                                   # ExpressionStatement
     |   expressionReturn                                        # ExpressionReturnStatement
     |   voidReturn                                              # VoidReturnStatement
     ;
@@ -125,6 +142,9 @@ expression
     :   '(' expression ')'                                      # ParenthesizedExpr
     |   '[' expressionList? ']'                                 # ArrayExpr // TODO Implement
     |   expression operator=('++' | '--')                       # PostfixExpr
+    |   qualifiedId operator=':=' expression                    # WalrusExpr
+    |   '[' expression 'for' ID ('in' | ':') expression
+    ('for' ID ('in' | ':') expression)* ('if' expression ('else' expression))? ']' # GeneratorExpr
     |   '(' type ')' expression                                 # CastExpr
     |   expression ('**' | '^') expression                      # ExpExpr
 
@@ -147,10 +167,11 @@ expression
     |   expression '|' expression                               # BitwiseORExpr
     |   expression ('&&' | 'and') expression                    # LogicalANDExpr
     |   expression ('||' | 'or') expression                     # LogicalORExpr
-    |   expression '?' expression ':' expression                # TernaryExpr
+    |   condition=expression '?' true_=expression ':' false_=expression # TernaryExpr
+    |   true_=expression 'if' condition=expression 'else' false_=expression # TernaryExpr
     |   'new' type '(' expressionList? ')' block?               # CreationExpr
     |   qualifiedId '(' expressionList? ')'                     # FunctionCallExpr
-    |   qualifiedId '[' expression ']'                          # ArrayAccessExpr
+    |   expression '[' expression ']'                           # ArrayAccessExpr
     |   expression '.' expression                               # VariableAccessExpr
 
     // All of the expressions below must have an autoType in the
@@ -171,8 +192,8 @@ fragment STRING_SYMBOL : ( ESC_SEQ | ~[\\\r\n'] ) ;
 CHAR : '\'' STRING_SYMBOL '\'' ;
 
 STRING
-    : '\'' STRING_SYMBOL* '\''
-    | '"'  STRING_SYMBOL* '"'
+    : '\'' STRING_SYMBOL*? '\''
+    | '"'  STRING_SYMBOL*? '"'
     ;
 
 fstring
@@ -186,9 +207,9 @@ fragment ESC_SEQ
 
 fragment HEX_DIGIT : [0-9a-fA-F] ;
 
-INT :   [0-9]+ ;
+INT :   [0-9]+ ('l' | 'L')? ;
 DECIMAL : [0-9]+ ('.' [0-9]+)? ('f' | 'F' | 'd' | 'D')? ;
-BOOL : ('true' | 'false') ;
+BOOL : ((('T' | 't') 'rue') | (('F' | 'f') 'alse')) ;
 WILDCARD : '.*' ;
 
 VOID : 'void' ;
@@ -201,7 +222,7 @@ FIGURE_BRACKET_R : '%>' | '}' ;
 ID  :   SYMBOL (SYMBOL | [0-9])* ;
 SYMBOL : (LETTER | '_' | '$') ;
 TERMINATOR : ';' | ( '\r'? '\n' ) ;
-qualifiedId : ID ('.' ID)* ;
+qualifiedId : ID ('.' ID)*? ;
 
 fragment LETTER : [a-zA-Zа-яА-Я] ;
 
