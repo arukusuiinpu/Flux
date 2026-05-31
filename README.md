@@ -1,12 +1,12 @@
 ## Flexible Object-Oriented to Data-Oriented Java
 
-# 𓆝𓆟𓆞Floodo Java𓆟𓆞𓆝
+# 𓆝𓆟𓆞Flux𓆟𓆞𓆝
 _As you can guess this is not a professional\
 project by any means in this initial state._
 # 𓆝𓆟𓆞___________𓆟𓆞𓆝
 
 ## Mock plans:
-- Implement a Directed Acyclic Graph Floodo IR structure
+- Implement a Directed Acyclic Graph Flux IR structure
 - More useful operators and aliases (Python, C#)
 - := operator
 - Better generics (C# inspired; includes single function parametrization for 2+ types)
