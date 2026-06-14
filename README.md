@@ -1,5 +1,5 @@
 # 𓆝𓆟𓆞Flux𓆟𓆞𓆝
-<br />_Flexibility should always be an alternative!<br />Flux is not an answer for your demands,<br />but is a call for action._
+<br />_Flexibility should always be an alternative!<br />Flux is not an answer for your demands,<br />but is a call for your action._
 # 𓆝𓆟𓆞_____𓆟𓆞𓆝
 
 ## Mock plans:
