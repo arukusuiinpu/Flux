@@ -48,6 +48,8 @@ var3 = varFunction1() // Also handles function variables
 
 var4 = "hai"
 
+notint = 2.0 // The default var type of a rational number is double
+
 private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 
     float c = float1 + float2; float d = 3.14 // Both ';' and '\n' serve as terminators
@@ -70,7 +72,7 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
     }
 
     for (element : list1) { // And Java format (':' and 'in' are interchangeable for both)
-        print(element, 'Java foreach')
+        print(element, 'Java foreach') // Kwargs and end="" for print coming soon!
     }
 
     bool ternaryBool = False if list1.size() > list2.size() else True // Python ternary is supported
@@ -79,11 +81,11 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 }
 
 def main(): // Optional python-style block and function syntax (def is the same as void)
-    print(double1 *** double2); // Tetration, also can be done using ^^
+    print(double1 *** double2); // Tetration
 
     var test = SampleFunction(float1, float2)
 
-    def voidDef(float voidFloat1, voidFloat2: float) { // You can combine python and java/C# syntax
+    def voidDef(float voidFloat1, voidFloat2: float) { // You can combine python and java/C# syntax (I know this looks cursed, this is intentional)
 
     }
 
