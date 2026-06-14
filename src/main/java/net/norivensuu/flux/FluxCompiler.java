@@ -1,31 +1,31 @@
 package net.norivensuu.flux;
 
+import com.github.bogdanovmn.jaclin.CLI;
+import com.sun.tools.javac.Main;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNodeImpl;
+import org.apache.commons.cli.*;
 
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
+import javax.tools.*;
+import java.io.*;
+import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+
+import static java.util.Objects.requireNonNull;
 
 // TODO Write a custom error handler for Flux code specifically (still expose the Java one)
 public class FluxCompiler {
-
-    private static final Path FLUX_SOURCE_ROOT = Paths.get("src/main/flux");
-    private static final Path OUTPUT_ROOT_DIR = Paths.get("src/generated");
-    private static final Path OUTPUT_SOURCE_ROOT = OUTPUT_ROOT_DIR.resolve("java");
-    private static final Path OUTPUT_ROOT = OUTPUT_SOURCE_ROOT;
-
-    private static final Path PROJECT_STRUCTURE_ROOT = Paths.get("net/norivensuu/testflux");
-    private static final Path PROJECT_ROOT = FLUX_SOURCE_ROOT.resolve(PROJECT_STRUCTURE_ROOT);
-    private static final Path PROJECT_METADATA = PROJECT_ROOT.resolve("inherited.flux");
-
     private static Map<Path, FluxMetadata> metadataRegistry = new HashMap<>();
     private static Map<FluxParser.ProgramContext, Program> programRegistry = new HashMap<>();
 
@@ -34,12 +34,21 @@ public class FluxCompiler {
     }
 
     public static class Program {
+        public Path fileName;
         public Set<String> imports = new HashSet<>();
         public FluxParser.ProgramContext ctx;
         public JavaCodeGeneratorVisitor.JavaCode javaCode;
+        public boolean precompile = false;
 
-        public Program(FluxParser.ProgramContext ctx) {
+        public Program(Path fileName, FluxParser.ProgramContext ctx) {
+            this.fileName = fileName;
             this.ctx = ctx;
+        }
+
+        public Program(Path fileName, FluxParser.ProgramContext ctx, boolean precompile) {
+            this.fileName = fileName;
+            this.ctx = ctx;
+            this.precompile = precompile;
         }
 
         public FluxParser.DeclarationContext addImport(String importPath) {
@@ -47,43 +56,130 @@ public class FluxCompiler {
         }
     }
 
-    static void main(String[] args) throws IOException {
-        System.out.println("Starting compilation of project: " + PROJECT_ROOT);
+    public static void main(String[] args) throws Exception {
+        new CLI("flux-compiler", "A Flux programming language to Java compiler.")
 
-        if (Files.exists(PROJECT_METADATA))
-            loadOrCreateMetadata(PROJECT_METADATA);
-        else
-            metadataRegistry.put(PROJECT_ROOT, new FluxMetadata().appendDefault());
+                .withOptions()
+                    .strArg("project", "A .flux source project folder to recursively compile.")
+                        .requires("output")
+                    .strArg("flux", "A .flux source file to compile.")
+                    .strArg("output", "An output .jar file or compiled project path.")
+                    .flag("verbose", "Enables Flux verbose compilation mode.")
+                .flag("enable-precompile", "Currently not working.")
+                .withRestrictions()
+                .atLeastOneShouldBeUsed("project", "flux")
 
-        try (Stream<Path> paths = Files.walk(PROJECT_ROOT)) {
-            paths.filter(Files::isRegularFile)
-                    .forEach(p -> {
-                        String fileName = p.toString();
-                        if (fileName.endsWith(".flux")) {
-                            compileFile(p);
-                        } else if (fileName.endsWith(".flux.meta")) {
-                            FluxMetadata defaultMeta = new FluxMetadata().appendDefault();
-                            metadataRegistry.put(p, defaultMeta);
+                .withEntryPoint(
+                        options -> {
+                            if (options.has("enable-precompile")) {
+                                System.out.println("Precompile is currently unavailable! Please do not use this option.");
+                            }
+                            else if (options.has("project")) {
+                                Path projectPath = Path.of(options.get("project"));
+                                Path metadata = projectPath.resolve("inherited.flux");
+                                Path outputPath = Path.of(options.get("output"));
+
+                                System.out.println("Starting compilation of project: " + projectPath);
+
+                                if (Files.exists(metadata))
+                                    loadOrCreateMetadata(metadata);
+                                else
+                                    metadataRegistry.put(projectPath, new FluxMetadata().appendDefault());
+
+                                try (Stream<Path> paths = Files.walk(projectPath)) {
+                                    var pathsList = paths.toList();
+                                    if (pathsList.stream().noneMatch((s) -> s.toString().endsWith(".flux") || s.toString().endsWith(".flux.meta"))) {
+                                        throw new FileNotFoundException("No .flux file found in the project folder. Are you sure you're using the right folder?");
+                                    }
+
+                                    pathsList.stream().filter(Files::isRegularFile)
+                                            .forEach(p -> {
+                                                String fileName = p.toString();
+
+                                                if (fileName.endsWith(".flux")) {
+                                                    compileFile(projectPath, p, outputPath, options.has("enable-precompile"), options.has("verbose"));
+                                                } else if (fileName.endsWith(".flux.meta")) {
+                                                    FluxMetadata defaultMeta = new FluxMetadata().appendDefault();
+                                                    metadataRegistry.put(p, defaultMeta);
+                                                }
+                                            });
+                                }
+                            }
+                            else if (options.has("flux")) {
+                                Path filePath = Path.of(options.get("flux"));
+                                var str = filePath.toAbsolutePath().toString();
+                                Path outputPath = options.has("output") ? Path.of(options.get("output")) : filePath.resolveSibling(str.substring(0, str.lastIndexOf(".")) + ".java");
+                                compileFile(filePath, filePath, outputPath, options.has("enable-precompile"), options.has("verbose"));
+                            }
                         }
-                    });
-        }
+                )
+
+                .run(args);
     }
 
-    private static void compileFile(Path filePath) {
-        System.out.println("\n--- Compiling: " + filePath.getFileName() + " ---");
+    private static void compileFile(Path originalPath, Path filePath, Path outputPath, boolean enablePrecompile) {
+        compileFile(originalPath, filePath, outputPath, enablePrecompile, true);
+    }
+
+    private static void compileFile(Path originalPath, Path filePath, Path outputPath, boolean enablePrecompile, boolean verbose) {
+        if (verbose)
+            System.out.println("\n--- Compiling: " + filePath.getFileName() + " ---");
         try {
-            FluxMetadata metadata = buildClosestMetadata(filePath.getParent());
+            FluxMetadata metadata = buildClosestMetadata(originalPath, filePath.getParent());
 
             InputStream input = new FileInputStream(filePath.toFile());
             CharStream cs = CharStreams.fromStream(input);
-            FluxParser.ProgramContext tree = getProgramContext(cs, metadata);
 
-            System.out.println("Successfully parsed and enriched " + filePath.getFileName());
+            FluxLexer lexer = new FluxLexer(cs);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            FluxParser parser = new FluxParser(tokens);
+
+            FluxParser.ProgramContext tree = getProgramContext(parser, filePath.getFileName(), metadata);
+
+            if (verbose)
+                System.out.println("Successfully parsed and enriched " + filePath.getFileName());
 
             JavaCodeGeneratorVisitor generator = new JavaCodeGeneratorVisitor();
-            String generatedJavaCode = generator.visit(tree);
 
-            writeGeneratedJavaFile(filePath, generatedJavaCode);
+//            if (enablePrecompile) {
+//
+//                var precompile = tree.precompile();
+//
+//                if (precompile != null) {
+//                    var precompileProgram = new FluxParser.ProgramContext(null, -1);
+//                    var precompilePath = filePath.getParent().resolve("Precompile.java");
+//                    var prog = new Program(Path.of("Precompile"), precompileProgram, true);
+//
+//                    tree.children = tree.children.stream().filter((s) -> !(s instanceof FluxParser.PrecompileContext)).toList();
+//
+//                    getProgramRegistry().put(precompileProgram, prog);
+//
+//                    for (var i : precompile.classBlock().classLines().children) {
+//                        precompileProgram.addChild((RuleContext) i);
+//                        i.setParent(precompileProgram);
+//                    }
+//
+//                    var fullPackageFileStr = originalPath.relativize(precompilePath).toString().replace("\\", ".");
+//                    var relativePackageFileStr = fullPackageFileStr.substring(0, fullPackageFileStr.lastIndexOf("."));
+//                    String precompileString = "package " + relativePackageFileStr.substring(0, relativePackageFileStr.lastIndexOf(".")) + ";\n" + generator.visit(precompileProgram);
+//
+//                    if (verbose)
+//                        System.out.printf("--- Executing: %s precompile ---\n", filePath.getFileName());
+//
+//                    var precompileFile = writeGeneratedJavaFile(originalPath, precompilePath, precompileString, outputPath);
+//                    assert precompileFile != null;
+//                    executePrecompile(precompileFile);
+//                }
+//            }
+
+            var fullPackageFileStr = originalPath.relativize(filePath).toString().replace("\\", ".");
+
+            System.out.println(fullPackageFileStr);
+            var relativePackageFileStr = !fullPackageFileStr.isEmpty() ? fullPackageFileStr.substring(0, fullPackageFileStr.lastIndexOf(".")) : "";
+            var packageName = !relativePackageFileStr.isEmpty() ? relativePackageFileStr.substring(0, relativePackageFileStr.lastIndexOf(".")) : "flux";
+            String generatedJavaCode = "package " + packageName + ";\n" + generator.visit(tree);
+
+            writeGeneratedJavaFile(originalPath, filePath, generatedJavaCode, outputPath);
 
         } catch (IOException e) {
             System.err.println("Error processing file: " + filePath);
@@ -91,14 +187,10 @@ public class FluxCompiler {
         }
     }
 
-    private static FluxParser.ProgramContext getProgramContext(CharStream cs, FluxMetadata metadata) {
-        FluxLexer lexer = new FluxLexer(cs);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        FluxParser parser = new FluxParser(tokens);
-
+    private static FluxParser.ProgramContext getProgramContext(FluxParser parser, Path fileName, FluxMetadata metadata) {
         FluxParser.ProgramContext tree = parser.program();
 
-        var program = new Program(tree);
+        var program = new Program(fileName, tree);
         programRegistry.put(tree, program);
 
         if (metadata != null && metadata.imports != null) {
@@ -130,7 +222,6 @@ public class FluxCompiler {
         FluxParser.DeclarationContext declarationContext = new FluxParser.DeclarationContext(tree, -1);
         FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(declarationContext, -1);
 
-        //TODO Fix every anonymous token!
         syntheticImport.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "import ")));
 
         FluxParser.QualifiedIdContext qualIdCtx = new FluxParser.QualifiedIdContext(syntheticImport, -1);
@@ -158,11 +249,11 @@ public class FluxCompiler {
         return declarationContext;
     }
 
-    private static FluxMetadata buildClosestMetadata(Path directory) {
+    private static FluxMetadata buildClosestMetadata(Path originalPath, Path directory) {
         Path current = directory;
         FluxMetadata accumulatedMetadata = null;
 
-        while (current != null && current.startsWith(FLUX_SOURCE_ROOT)) {
+        while (current != null && current.startsWith(originalPath)) {
             FluxMetadata levelMetadata = metadataRegistry.get(current);
 
             if (levelMetadata == null) {
@@ -178,7 +269,7 @@ public class FluxCompiler {
                 }
             }
 
-            if (current.equals(FLUX_SOURCE_ROOT)) {
+            if (current.equals(originalPath)) {
                 break;
             }
 
@@ -248,14 +339,14 @@ public class FluxCompiler {
         return meta;
     }
 
-    private static void writeGeneratedJavaFile(Path originalFluxPath, String javaSourceCode) {
+    private static File writeGeneratedJavaFile(Path originalPath, Path originalFluxPath, String javaSourceCode, Path outputRoot) {
         try {
-            Path relativePath = FLUX_SOURCE_ROOT.relativize(originalFluxPath);
+            Path relativePath = originalPath.relativize(originalFluxPath);
 
             Path relativeParent = relativePath.getParent();
             Path outputDirectory = (relativeParent != null)
-                    ? OUTPUT_ROOT.resolve(relativeParent)
-                    : OUTPUT_ROOT;
+                    ? outputRoot.resolve(relativeParent)
+                    : outputRoot;
 
             Files.createDirectories(outputDirectory);
 
@@ -265,42 +356,12 @@ public class FluxCompiler {
             Files.writeString(outputPath, javaSourceCode);
 
             System.out.println("Generated Java file: " + outputPath);
+
+            return new File(outputPath.toUri());
         } catch (IOException e) {
             System.err.println("Error writing generated Java file: " + e.getMessage());
         }
+
+        return null;
     }
-
-    private static void generateMavenPomFile() {
-        // TODO Implement properly
-        Path pomPath = OUTPUT_ROOT_DIR.resolve("pom.xml");
-        try (FileWriter writer = new FileWriter(pomPath.toFile())) {
-            System.out.println("\n--- Generating Maven POM file: " + pomPath + " ---");
-
-            Files.createDirectories(OUTPUT_ROOT_DIR);
-
-            String pomContent = String.format("""
-            <project xmlns="http://maven.apache.org/POM/4.0.0"
-                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-                <modelVersion>4.0.0</modelVersion>
-
-                <groupId>%s</groupId>
-                <artifactId>%s</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-
-                <properties>
-                    <maven.compiler.source>25</maven.compiler.source>
-                    <maven.compiler.target>25</maven.compiler.target>
-                    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-                </properties>
-            </project>
-            """, PROJECT_ROOT.toString().replace("\\", "."), PROJECT_ROOT.getFileName());
-
-            writer.write(pomContent);
-            System.out.println("Generated pom.xml successfully.");
-        } catch (IOException e) {
-            System.err.println("Error writing pom.xml: " + e.getMessage());
-        }
-    }
-
 }

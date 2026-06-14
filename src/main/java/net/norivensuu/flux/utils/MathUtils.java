@@ -51,4 +51,8 @@ public class MathUtils {
     public static double power(double a, double b) {
         return Math.pow(a, b);
     }
+
+    public static double abs(double a) {
+        return Math.abs(a);
+    }
 }

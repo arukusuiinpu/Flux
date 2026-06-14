@@ -21,52 +21,56 @@ var2 = 1.0F // Var is optional
 
 var3 = varFunction1() // Also handles function variables
 
+var4 = "hai"
+
 private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 
     float c = float1 + float2; float d = 3.14 // Both ';' and '\n' serve as terminators
 
     float m1 = c ** d // Exponent operator
-    float m2 = c /% d // Floor Division operator
+    float m2 = c /% d // Floor Division operator (aka // in python)
     float m3 = c %/ d // Ceil Division operator
 
     m1 **= 2
     m2 /%= 2 // These three work the same way as any regular operation assignments
     m3 %/= 2
 
-    List<string> list = new ArrayList() {{ add("element1"); add("element2"); }} // Directly compiles in Java
+    List<string> list1 = new ArrayList() {{ add("element1"); add("element2"); }} // Directly compiles in Java
+    list2 = [1, 2, 3, 4, 5] // Borrows simpler list structure from python
 
     bool1 = c < d < 5 // Chained comparisons are supported
 
-    foreach (var element in list) { // Foreach works both in C# format
-        Print(element, 'C# foreach') // Custom System.out.println wrapper
+    foreach (var element in list1) { // Foreach works both in C# format
+        print(element, 'C# foreach') // Custom System.out.println wrapper
     }
 
-    for (element : list) { // And Java format (':' and 'in' are interchangeable for both)
-        Print(element, 'Java foreach')
+    for (element : list1) { // And Java format (':' and 'in' are interchangeable for both)
+        print(element, 'Java foreach')
     }
 
-    return 1 < 2 < 5 ? False : True
+    bool ternaryBool = False if list1.size() > list2.size() else True // Python ternary is supported
+
+    return 1 < 2 < 5 ? ternaryBool : False // The more classic alternative too
 }
 
-void main() {
-    Print(double1 *** double2); // Tetration
+def main() { // Optional python-style block and function syntax (def is the same as void)
+    print(double1 *** double2); // Tetration, also can be done using ^^
 
     var test = SampleFunction(float1, float2)
+
+    def voidDef(float voidFloat1, voidFloat2: float) { // You can combine python and java/C# syntax
+
+    }
 
     i = 0
 
     string SampleString(string name) { // Allows nested functions
-        return f"Hello, {name}! How are you today my little fella? The i is: {i}"
+        return f"Hello, {name}! How are you today my little fella? The i is: {i}" // Fstrings
     }
 
-    string sampleString = SampleString("random user") + "\n" + test
+    string sampleString = f"{SampleString("random user")}\ntest"
 
-    Print(sampleString)
-}
-
-unfinished void unfinishedVoid() { // Flux also has a special comment function or variable modifier for unfinished parts of your code
-    unfinished float unfinishedFloat;
-    illegal float illegalFloat; // I think you can find a few places this could be useful in
+    print(sampleString)
 }
 
 var varFunction1() { // Flux also allows loosely typed functions, it inherits the type from the return statement, ex. int
@@ -75,9 +79,81 @@ var varFunction1() { // Flux also allows loosely typed functions, it inherits th
 
 varFunction2() { // Function type will resolve into illegal if there are no returns, or any returns are of different types, this one is legal and is double
     if (bool1) {
-        return 1.0
+        return [1.0 for i in range(1000)][0] // Python-style generators
     }
     else {
-        return 1.0
+        [{ print(i) } for i in range(1000)] // We even have slightly more advanced than python generators in java
+
+        return 1.0 + 1 // Handles auto promotion (double + int -> double)
     }
 }
+
+unfinished void unfinishedVoid() { // Flux also has a special comment function or variable modifier for unfinished parts of your code
+
+    illegal float illegalFloat; // I think you can find a few places this could be useful in
+
+    unpolished void unpolishedVoid() { print(5 *** 5) } // For when something you coded works fine, but could be rewritten by a more competent person
+    suboptimal void suboptimalVoid() { for i in range(1000000) { print(i) } } // This could signal logic that works great at the expense of the execution time
+    ugly void uglyVoid() { [x for x in range(100)][0] } // This one just begs to be rewritten because of how ugly you found it
+
+}
+
+exp1 = (float) 2 ** 3 ** 4 // Operations handled according to associativity from this list (ordered by the lexer precedence):
+/*
+(This will be moved to the documentation eventually)
+
+    Tetration -> Right to Left
+        expression *** expression
+
+    Exponentiation -> Right to Left
+        expression ** expression
+
+    Array access -> Left to Right
+        expression[expression]
+
+    Variable access -> Left to Right
+        expression.expression
+
+    Lambda functions -> Right to Left
+        lambda id...: expression
+        (id...) -> or => expression
+
+    Walrus operator -> Right to Left
+        id := expression
+
+    Casting -> Left to Right
+        (type) expression
+
+    Not operator -> Left to Right // Because not should behave like ! does, yet this might be changed in the future
+        !expression
+        not(expression)
+
+    Multiplication/Division -> Left to Right
+        expression * or / or % expression
+
+    Floor Division -> Left to Right
+        expression /% expression
+
+    Ceil Division -> Left to Right
+        expression %/ expression
+
+    Addition/Subtraction -> Left to Right
+        expression + or - expression
+
+    Bit Shift operations -> Left to Right
+        expression << or >> or >>> expression
+
+    Comparisons -> Left to Right
+        expression < or > or <= or >= expression
+        expression instanceof expression
+
+    Equality -> Left to Right
+        expression == or != expression
+
+    Bitwise operations -> Left to Right
+        expression & or ^ or | expression
+
+    Logical operations -> Left to Right
+        expression && or and expression
+        expression || or 'or' expression
+*/

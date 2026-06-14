@@ -3,10 +3,12 @@ package net.norivensuu.flux;
 import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.misc.OrderedHashSet;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -16,12 +18,46 @@ import static net.norivensuu.flux.utils.FluxUtils.*;
 
 public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
-    public static final class StandartFluxLibs {
-        public static final String MATH_UTILS = "net.norivensuu.flux.utils.MathUtils.*";
-        public static final String STATIC_MATH_UTILS = "static " + MATH_UTILS;
+    public static class Assertions implements Iterable<String> {
+        public Map<Integer, List<String>> pendingAssertions = new TreeMap<>();
+
+        public Assertions() {
+        }
+
+        public void add(String assertion) {
+            add(0, assertion);
+        }
+
+        public void add(int layer, String assertion) {
+            if (!pendingAssertions.containsKey(layer)) {
+                pendingAssertions.put(layer, new ArrayList<>());
+            }
+
+            pendingAssertions.get(layer).add(assertion);
+        }
+
+        public void clear() {
+            for (var layer : pendingAssertions.values()) {
+                layer.clear();
+            }
+        }
+
+        @Override
+        public Iterator<String> iterator() {
+            var s = new ArrayList<String>();
+            for (var layer : pendingAssertions.values()) {
+                s.addAll(layer);
+            }
+            return s.iterator();
+        }
+
+        @Override
+        public String toString() {
+            return pendingAssertions.toString();
+        }
     }
 
-    public final List<String> pendingAssertions = new ArrayList<>();
+    public final Assertions pendingAssertions = new Assertions();
 
     public class JavaCode {
         public StringBuilder builder;
@@ -29,9 +65,15 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         public int atIndex;
         public int lastImportsLine;
         public boolean checkDeclarations = true;
+        public int declarationsPass = 0;
+        public boolean hasUnknowns = false;
+
+        public boolean checkPass() {
+            return !hasUnknowns || declarationsPass > 0;
+        }
 
         public Map<DeclarationContext, Integer> programDeclarations = new HashMap<>();
-        
+
         public Map<ParseTree, Declaration> declarations = new HashMap<>();
 
         public JavaCode() {
@@ -39,7 +81,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
 
         public StringBuilder addLine(String line, int at) {
-            return builder.insert(at, String.format("%s%s\n", "\t".repeat(indentLevel), line));
+            return builder.insert(at, line + "\n");
         }
 
         public void checkDeclaration(DeclarationContext ctx, int lastIndex) {
@@ -54,15 +96,29 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
 
         public void HashDeclaration(ParseTree ctx, Declaration declaration) {
-            if (!declarations.containsKey(ctx)) {
+            if (
+                    !declarations.containsKey(ctx) &&
+                    declaration != null &&
+                    declaration.type != null &&
+                    !declaration.type.is("unknown")
+            ) {
                 declarations.put(ctx, declaration);
             }
         }
+
         public void HashDeclaration(String id, ParseTree ctx) {
-            HashDeclaration(ctx, getDeclaration(id, ctx));
+            HashDeclaration(ctx, simplifyDeclaration(ctx));
         }
-        public void HashDeclaration(ParseTree ctx, String type, String id) {
+
+        public void HashDeclaration(ParseTree ctx, ComplexType type, String id) {
             HashDeclaration(ctx, new Declaration(type, id, ctx));
+        }
+
+        public boolean existsDeclaration(String id) {
+            for (var decl : declarations.values()) {
+                if (decl.id.equals(id)) return true;
+            }
+            return false;
         }
 
         @Override
@@ -71,38 +127,74 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
     }
 
+    public FluxCompiler.Program getProgram(ProgramContext ctx) {
+        return FluxCompiler.getProgramRegistry().get(ctx);
+    }
+
+    private final Map<ParseTree, FluxCompiler.Program> dynamicProgramHash = new HashMap<>();
+
     public FluxCompiler.Program getProgram(ParseTree ctx) {
-        return  FluxCompiler.getProgramRegistry().get(getToClosestParent(ctx, ProgramContext.class));
+        if (dynamicProgramHash.containsKey(ctx))
+            return dynamicProgramHash.get(ctx);
+
+        var program = FluxCompiler.getProgramRegistry().get(getToClosestParent(ctx, ProgramContext.class));
+
+        dynamicProgramHash.put(ctx, program);
+        return program;
     }
 
     @Override
-    public String visitProgram(FluxParser.ProgramContext ctx) {
+    public String visitProgram(ProgramContext ctx) {
         var program = FluxCompiler.getProgramRegistry().get(ctx);
         program.javaCode = new JavaCode();
 
-        if (!ctx.statement().isEmpty()) {
-            synthesizeMainFunction(ctx.statement(), ctx);
+        boolean hadClass = ctx.children.stream().anyMatch((s) -> s instanceof DeclarationContext c && c.classDecl() != null && c.classDecl().mainClass.getText().equals(program.fileName.toString().split("\\.")[0]));
+
+        ClassLinesContext ctxDecl = null;
+        if (!hadClass) {
+            ctxDecl = synthesizeProgramClass(program.precompile, ctx).classDecl().classBlock().classLines();
+        }
+        else {
+            var candidate = ctx.children.stream().filter((s) -> s instanceof DeclarationContext c && c.classDecl() != null && c.classDecl().mainClass.getText().equals(program.fileName.toString().split("\\.")[0])).map((s) -> ((DeclarationContext) s).classDecl().classBlock().classLines()).findFirst();
+            if (candidate.isPresent()) {
+                ctxDecl = candidate.get();
+            }
         }
 
-        while (program.javaCode.checkDeclarations) {
-            program.javaCode.resetJavaCode();
-            program.javaCode.checkDeclarations = false;
+        if (!hadClass && ctxDecl.declaration().stream().noneMatch((s) -> s.functionDecl() != null && s.functionDecl() instanceof RunnableFunctionDeclContext void_ && void_.ID().getText().equalsIgnoreCase("main"))) {
+            synthesizeMainFunction(ctxDecl);
+        }
+        else if (hadClass && ctxDecl == null &&
+                ctx.declaration().stream().noneMatch((s) -> s.functionDecl() != null && s.functionDecl() instanceof RunnableFunctionDeclContext void_ && void_.ID().getText().equalsIgnoreCase("main"))
+        ) {
+            synthesizeMainFunction(ctx);
+        }
+        else if (hadClass && ctxDecl != null &&
+                ctx.declaration().stream().noneMatch((s) -> s.functionDecl() != null && s.functionDecl() instanceof RunnableFunctionDeclContext void_ && void_.ID().getText().equalsIgnoreCase("main"))  &&
+                ctxDecl.declaration().stream().noneMatch((s) -> s.functionDecl() != null && s.functionDecl() instanceof RunnableFunctionDeclContext void_ && void_.ID().getText().equalsIgnoreCase("main"))
+        ) {
+            synthesizeMainFunction(ctxDecl);
+        }
 
-            for (var declaration : ctx.declaration()) {
-                if (declaration.importDecl() != null) {
-                    mapDeclarations(declaration.importDecl(), program);
+        if (!program.precompile) {
+
+            while (program.javaCode.checkDeclarations) {
+                program.javaCode.resetJavaCode();
+                program.javaCode.checkDeclarations = false;
+
+                mapDeclarations(ctx, program);
+                if (program.javaCode.hasUnknowns) { // TODO: Implement a proper way of handling recursive functions, bottom up declaration handling doesn't account for this automatically like it does with everything else
+                    program.javaCode.declarationsPass++;
+                    mapDeclarations(ctx, program);
+                }
+
+                for (var decl : ctx.declaration()) {
+                    processDeclaration(decl, program);
                 }
             }
-            for (var declaration : ctx.declaration()) {
-                if (declaration.functionDecl() != null) {
-                    mapDeclarations(declaration.functionDecl(), program);
-                }
-            }
-            for (var declaration : ctx.declaration()) {
-                if (declaration.varDecl() != null) {
-                    mapDeclarations(declaration.varDecl(), program);
-                }
-            }
+        }
+        else {
+            program.javaCode.checkDeclarations = false;
 
             for (var decl : ctx.declaration()) {
                 processDeclaration(decl, program);
@@ -112,16 +204,48 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return program.javaCode.toString();
     }
 
-    public void mapDeclarations(ParseTree ctx, FluxCompiler.Program program) {
-        if (ctx != null) {
-            var declaration = simplifyDeclaration(ctx);
+    public List<ParseTree> buildBottomUpDepthFirstChildren(ParseTree ctx) {
+        class BottomUpDepthFirst {
+            public List<AbstractMap.SimpleEntry<Integer, ParseTree>> layers = new ArrayList<>();
 
-            if (declaration != null) {
-                program.javaCode.HashDeclaration(ctx, declaration);
+            public List<ParseTree> traverse(ParseTree ctx) {
+                return traverse(ctx, 0);
+            }
+
+            private List<ParseTree> traverse(ParseTree ctx, int depth) {
+                if (ctx != null) {
+                    for (int i = 0; i < ctx.getChildCount(); i++) {
+                        traverse(ctx.getChild(i), depth+1);
+                    }
                 }
 
-            for (int i = 0; i < ctx.getChildCount(); i++) {
-                mapDeclarations(ctx.getChild(i), program);
+                layers.add(new AbstractMap.SimpleEntry<>(depth, ctx));
+
+                if (depth == 0) {
+                    layers.sort(Comparator.comparingInt(AbstractMap.SimpleEntry::getKey));
+                    layers = layers.reversed();
+
+                    return layers.stream().map(AbstractMap.SimpleEntry::getValue).toList();
+                }
+
+                return null;
+            }
+        }
+        return new BottomUpDepthFirst().traverse(ctx);
+    }
+
+    public void mapDeclarations(ParseTree ctx, FluxCompiler.Program program) {
+        if (ctx != null) {
+            var children = buildBottomUpDepthFirstChildren(ctx);
+
+            for (var child : children) {
+                if (isDeclaration(child) && !program.javaCode.declarations.containsKey(child)) {
+                    var declaration = simplifyDeclaration(child);
+
+                    if (declaration != null) {
+                        program.javaCode.HashDeclaration(child, declaration);
+                    }
+                }
             }
         }
     }
@@ -131,7 +255,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
             var type = simplifyLocalVarType(ctx);
 
-            return new Declaration(type.type, type.id, ctx, "var");
+            return new Declaration(type.type, type.id, ctx, ctm.of("var"));
         }
         return null;
     }
@@ -142,90 +266,121 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
             var localType = simplifyLocalVarType(ctx.varDecl().localVarDecl());
 
-            return new Declaration(localType.type, localType.id, globalDecl, "var");
-        }
-        else if (ctx.functionDecl() != null) {
+            return new Declaration(localType.type, localType.id, globalDecl, ctm.of("var"));
+        } else if (ctx.functionDecl() != null) {
             return simplifyDeclaration(ctx.functionDecl());
-        }
-        else if (ctx.importDecl() != null) {
+        } else if (ctx.importDecl() != null) {
             return simplifyDeclaration(ctx.importDecl());
         }
         return null;
     }
 
     public Declaration simplifyDeclaration(ImportDeclContext ctx) {
-        String declType = String.format("import%s", ctx.qualifiedId().getText().startsWith("static") ? " static" : "");
+        ComplexType declType = ctm.of(String.format("import%s", ctx.qualifiedId().getText().startsWith("static") ? " static" : ""));
         String declId = ctx.qualifiedId().getText().replace("static ", "");
 
-        return new Declaration(declType, declId, ctx, "library");
+        return new Declaration(declType, declId, ctx, ctm.of("library"));
     }
 
     public Declaration simplifyDeclaration(VarDeclContext ctx) {
         var localType = simplifyLocalVarType(ctx.localVarDecl());
 
-        return new Declaration(localType.type, localType.id, ctx, "var");
+        return new Declaration(localType.type, localType.id, ctx, ctm.of("var"));
     }
 
     public Declaration simplifyDeclaration(FunctionDeclContext ctx) {
 
-        String type = "";
+        ComplexType type = null;
         if (ctx instanceof RunnableFunctionDeclContext decl) {
-            type = decl.VOID().getText();
-        }
-        else if (ctx instanceof ConsumerFunctionDeclContext decl) {
-            type = visit(decl.type());
-        }
-        else if (ctx instanceof VarFunctionDeclContext decl) {
-            Set<String> types = new HashSet<>();
+            type = ctm.of("void");
+        } else if (ctx instanceof ConsumerFunctionDeclContext decl) {
+            type = ctm.of(visit(decl.type()));
+        } else if (ctx instanceof VarFunctionDeclContext decl) {
+            Set<ComplexType> types = new HashSet<>();
 
             collectReturnTypes(decl.returnBlock(), types);
 
             if (types.size() == 1) {
                 type = types.stream().findFirst().get();
             } else {
-                type = "illegal";
+                type = ctm.of("illegal");
             }
         }
 
         String id = "";
         if (ctx instanceof RunnableFunctionDeclContext decl) {
             id = decl.ID().getText();
-        }
-        else if (ctx instanceof ConsumerFunctionDeclContext decl) {
+        } else if (ctx instanceof ConsumerFunctionDeclContext decl) {
             id = decl.ID().getText();
-        }
-        else if (ctx instanceof VarFunctionDeclContext decl) {
+        } else if (ctx instanceof VarFunctionDeclContext decl) {
             id = decl.ID().getText();
         }
 
-        return new Declaration(type, id, ctx, "function");
+        return new Declaration(type, id, ctx, ctm.of("function"));
     }
 
-    private void collectReturnTypes(ParseTree ctx, Set<String> types) {
-        for (int i = 0; i < ctx.getChildCount(); i++) {
-            var child = ctx.getChild(i);
+    public Declaration simplifyDeclaration(ClassDeclContext ctx) {
+        return new Declaration(ctm.of("class"), ctx.mainClass.getText(), ctx, ctm.of("class"));
+    }
 
+    public Declaration simplifyDeclaration(FormalParameterContext ctx) {
+        return new Declaration(ctm.of(visit(ctx.type())), ctx.packedId().getText(), ctx, ctm.of("var"));
+    }
+
+    private void collectReturnTypes(ParseTree ctx, Set<ComplexType> types) {
+        var children = buildBottomUpDepthFirstChildren(ctx);
+        for (var child : children) {
             if (child instanceof ExpressionReturnContext ret) {
-                types.add(getAutoType(ret.expression()));
+                var type = getAutoType(ret.expression());
+
+                if (!type.is("unknown")) {
+                    types.add(type);
+                }
             }
-            collectReturnTypes(child, types);
         }
+    }
+
+    public boolean isDeclaration(Object ctx) {
+        if (ctx instanceof LocalVarDeclContext decl) {
+            return true;
+        } else if (ctx instanceof DeclarationContext decl) {
+            return true;
+        } else if (ctx instanceof VarDeclStatementContext decl) {
+            return true;
+        } else if (ctx instanceof FunctionDeclStatementContext decl) {
+            return true;
+        } else if (ctx instanceof VarDeclContext decl) {
+            return true;
+        } else if (ctx instanceof FunctionDeclContext decl) {
+            return true;
+        } else if (ctx instanceof ImportDeclContext decl) {
+            return true;
+        } else if (ctx instanceof ClassDeclContext decl) {
+            return true;
+        } else if (ctx instanceof FormalParameterContext decl) {
+            return true;
+        }
+        return false;
     }
 
     public Declaration simplifyDeclaration(Object ctx) {
         if (ctx instanceof LocalVarDeclContext decl) {
             return simplifyDeclaration(decl);
-        }
-        else if (ctx instanceof DeclarationContext decl) {
+        } else if (ctx instanceof DeclarationContext decl) {
             return simplifyDeclaration(decl);
-        }
-        else if (ctx instanceof VarDeclContext decl) {
+        } else if (ctx instanceof VarDeclStatementContext decl) {
+            return simplifyDeclaration(decl.varDecl());
+        } else if (ctx instanceof FunctionDeclStatementContext decl) {
+            return simplifyDeclaration(decl.functionDecl());
+        } else if (ctx instanceof VarDeclContext decl) {
             return simplifyDeclaration(decl);
-        }
-        else if (ctx instanceof FunctionDeclContext decl) {
+        } else if (ctx instanceof FunctionDeclContext decl) {
             return simplifyDeclaration(decl);
-        }
-        else if (ctx instanceof ImportDeclContext decl) {
+        } else if (ctx instanceof ImportDeclContext decl) {
+            return simplifyDeclaration(decl);
+        } else if (ctx instanceof ClassDeclContext decl) {
+            return simplifyDeclaration(decl);
+        } else if (ctx instanceof FormalParameterContext decl) {
             return simplifyDeclaration(decl);
         }
         return null;
@@ -244,7 +399,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return false;
     }
 
-    private void processDeclaration(FluxParser.DeclarationContext declarationCtx, FluxCompiler.Program program) {
+    private void processDeclaration(DeclarationContext declarationCtx, FluxCompiler.Program program) {
         if (program.javaCode.checkDeclarations) return;
 
         if (!program.javaCode.programDeclarations.containsKey(declarationCtx)) {
@@ -257,46 +412,135 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             } else if (declarationCtx.functionDecl() != null) {
                 String functionCode = visit(declarationCtx.functionDecl());
                 if (functionCode != null) {
-                    javaString = functionCode.replace("\n", "\n    ").trim();
+                    javaString = functionCode;
                     program.javaCode.addLine(javaString, program.javaCode.atIndex);
                 }
             } else if (declarationCtx.varDecl() != null) {
                 javaString = visit(declarationCtx.varDecl());
                 program.javaCode.addLine(javaString, program.javaCode.atIndex);
+            } else if (declarationCtx.classDecl() != null) {
+                visit(declarationCtx.classDecl());
             }
 
             program.javaCode.checkDeclaration(declarationCtx, javaString.length() + 1);
-        } else {
-            program.javaCode.atIndex += program.javaCode.programDeclarations.get(declarationCtx);
         }
+    }
+
+    @Override
+    public String visitClassDecl(ClassDeclContext ctx) {
+        var program = getProgram(ctx);
+
+        String javaString = String.format("%sclass %s%s {", !ctx.functionModifiers().getText().isEmpty() ? ctx.functionModifiers().getText() + " " : "", ctx.mainClass.getText(), ctx.extendsClass != null ? String.format(" extends %s", ctx.extendsClass.getText()) : "");
+
+        program.javaCode.addLine(javaString, program.javaCode.atIndex);
+        program.javaCode.atIndex += javaString.length() + 1;
+
+        javaString = visit(ctx.classBlock().classLines());
+
+        program.javaCode.addLine(javaString, program.javaCode.atIndex);
+        program.javaCode.atIndex += javaString.length() + 1;
+
+        javaString = "}";
+
+        program.javaCode.addLine(javaString, program.javaCode.atIndex);
+        program.javaCode.atIndex += javaString.length() + 1;
+
+        return null;
     }
 
     @Override
     public String visitType(TypeContext ctx) {
         StringBuilder builder = new StringBuilder();
         if (!ctx.type().isEmpty()) {
-            builder.append(visit(ctx.type(0))).append("<").append(visit(ctx.type(1))).append(">");
-        }
-        else {
-            if (ctx.qualifiedId() != null)
-                return convertType(visit(ctx.qualifiedId()));
+            builder.append(convertFluxType(visit(ctx.type(0)))).append("<").append(convertFluxType(visit(ctx.type(1)))).append(">");
+        } else {
+            if (ctx.qualifiedId() != null) {
+                return convertFluxType(visit(ctx.qualifiedId()));
+            }
 
-            return convertType(ctx.getText());
+            return convertFluxType(ctx.getText());
         }
 
         return builder.toString();
     }
 
-    private FluxParser.DeclarationContext synthesizeMainFunction(List<FluxParser.StatementContext> statements, FluxParser.ProgramContext parent) {
-        FluxParser.DeclarationContext declCtx = new FluxParser.DeclarationContext(parent, -1);
+    private DeclarationContext synthesizeProgramClass(boolean precompile, ProgramContext parent) {
+        DeclarationContext declCtx = new DeclarationContext(parent, -1);
 
-        FluxParser.FunctionDeclContext funcDecl = new FluxParser.FunctionDeclContext(declCtx, -1);
+        ClassDeclContext classDecl = new ClassDeclContext(declCtx, -1);
 
-        FluxParser.RunnableFunctionDeclContext mainFunc = new FluxParser.RunnableFunctionDeclContext(funcDecl);
+        FunctionModifiersContext modifiers = new FunctionModifiersContext(classDecl, -1);
 
-        FluxParser.FunctionModifiersContext modifiers = new FluxParser.FunctionModifiersContext(funcDecl, -1);
+        AccessModifierContext accessCtx = new AccessModifierContext(modifiers, -1);
 
-        FluxParser.AccessModifierContext accessCtx = new FluxParser.AccessModifierContext(modifiers, -1);
+        if (!precompile)
+            accessCtx.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "public")));
+
+        modifiers.addChild(accessCtx);
+
+        classDecl.addChild(modifiers);
+
+        FluxCompiler.Program program = getProgram(parent);
+
+        ClassNameContext nameContext = new ClassNameContext(classDecl, -1);
+
+        QualifiedIdContext nameId = new QualifiedIdContext(nameContext, -1);
+        nameId.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.ID, program.fileName.toString().split("\\.")[0])));
+
+        nameContext.addChild(nameId);
+
+        classDecl.mainClass = nameContext;
+
+        ClassBlockContext classBlock = new ClassBlockContext(classDecl, -1);
+        classBlock.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__3, "{"))); // '{'
+
+        ClassLinesContext classLines = new ClassLinesContext(classBlock, -1);
+
+        classBlock.addChild(classLines);
+        classBlock.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__4, "}"))); // '}'
+
+        classDecl.addChild(classBlock);
+        declCtx.addChild(classDecl);
+
+        if (parent.children == null) {
+
+        } else {
+            if (classLines.children == null) {
+                classLines.children = new ArrayList<>();
+            }
+            var classChildren = new ArrayList<ParseTree>();
+            var parentChildren = new ArrayList<ParseTree>();
+            for (var child : parent.children) {
+                if (child instanceof TerminalNodeImpl node && node.symbol.getType() == Token.EOF)
+                    continue;
+
+                if ((child instanceof DeclarationContext declaration && declaration.importDecl() != null) || (child instanceof TerminalNodeImpl node && node.symbol.getType() == Token.EOF)) {
+                    parentChildren.add(child);
+                }
+                else {
+                    classChildren.add(child);
+                }
+            }
+
+            classLines.children = classChildren;
+            parent.children = parentChildren;
+        }
+        parent.addChild(declCtx);
+        parent.addChild(new TerminalNodeImpl(new CommonToken(Token.EOF, "<EOF>")));
+
+        return declCtx;
+    }
+
+    private DeclarationContext synthesizeMainFunction(ParserRuleContext parent) {
+        DeclarationContext declCtx = new DeclarationContext(parent, -1);
+
+        FunctionDeclContext funcDecl = new FunctionDeclContext(declCtx, -1);
+
+        RunnableFunctionDeclContext mainFunc = new RunnableFunctionDeclContext(funcDecl);
+
+        FunctionModifiersContext modifiers = new FunctionModifiersContext(funcDecl, -1);
+
+        AccessModifierContext accessCtx = new AccessModifierContext(modifiers, -1);
 
         accessCtx.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "public")));
 
@@ -311,41 +555,162 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         mainFunc.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__1, "(")));
         mainFunc.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__2, ")")));
 
-        FluxParser.VoidBlockContext voidBlock = new FluxParser.VoidBlockContext(mainFunc, -1);
-        voidBlock.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__3, "{"))); // '{'
+        VoidBlockContext voidBlock = new VoidBlockContext(mainFunc, -1);
+        voidBlock.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.FIGURE_BRACKET_L, "{"))); // '{'
 
-        for (FluxParser.StatementContext stmt : statements) {
-            voidBlock.addChild(stmt);
-            stmt.parent = voidBlock;
-        }
+        VoidLinesContext voidLines = new VoidLinesContext(voidBlock, -1);
 
-        voidBlock.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__4, "}"))); // '}'
+        voidBlock.addChild(voidLines);
+        voidBlock.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.FIGURE_BRACKET_R, "}"))); // '}'
 
         mainFunc.addChild(voidBlock);
         funcDecl.addChild(mainFunc);
         declCtx.addChild(funcDecl);
 
         if (parent.children == null) {
-            parent.addChild(declCtx);
         } else {
-            parent.children.add(declCtx);
+            if (voidLines.children == null) {
+                voidLines.children = new ArrayList<>();
+            }
+            var classChildren = new ArrayList<ParseTree>();
+            var parentChildren = new ArrayList<ParseTree>();
+            for (var child : parent.children) {
+                if (child instanceof StatementContext) {
+                    classChildren.add(child);
+                    child.setParent(voidLines);
+                }
+                else {
+                    parentChildren.add(child);
+                    child.setParent(parent);
+                }
+            }
+
+            voidLines.children = classChildren;
+            parent.children = parentChildren;
         }
+        parent.addChild(declCtx);
 
         return declCtx;
     }
 
-    @Override
-    public String visitImportDecl(ImportDeclContext ctx) {
-        return String.format("import %s%s;", ctx.qualifiedId().getText(), ctx.wildcard != null ? ctx.wildcard.getText() : "");
+    public void ensureGeneratorDeclarations(GeneratorExprContext ctx) {
+        var program = getProgram(ctx);
+
+        for (var iter : ctx.generator_for().stream().map((s) -> List.of(s.iterId, s.collection)).toList()) {
+            if (program.javaCode.existsDeclaration(iter.getFirst().getText())) return;
+
+            var strictLocalDecl = new StrictlyTypedLocalVarContext(new LocalVarDeclContext(ctx, -1));
+
+            var typeCtx = new TypeContext(strictLocalDecl, -1);
+            var qualifiedId = new QualifiedIdContext(typeCtx, -1);
+            typeCtx.addChild(qualifiedId);
+
+            var type = getAutoType(iter.get(1));
+
+            qualifiedId.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.ID, type.getFluxType())));
+
+            var packedId = new PackedIdContext(strictLocalDecl, -1);
+            packedId.addChild(iter.getFirst());
+
+            var arrayAccess = new ArrayAccessExprContext(new ExpressionContext(strictLocalDecl, -1));
+
+            arrayAccess.collection = (ExpressionContext) iter.get(1);
+
+            var intExpr = new IntExprContext(new ExpressionContext(arrayAccess, -1));
+            intExpr.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "[")));
+            intExpr.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.INT, "0")));
+            intExpr.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__1, "]")));
+
+            arrayAccess.element = intExpr;
+
+            strictLocalDecl.addChild(typeCtx);
+            strictLocalDecl.addChild(packedId);
+            strictLocalDecl.addChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "=")));
+            strictLocalDecl.addChild(arrayAccess);
+
+            program.javaCode.HashDeclaration(strictLocalDecl, type.subtypes.getFirst(), iter.getFirst().getText());
+        }
     }
 
     @Override
-    public String visitIntExpr(FluxParser.IntExprContext ctx) {
+    public String visitGeneratorExpr(GeneratorExprContext ctx) {
+        ensureGeneratorDeclarations(ctx);
+
+        var item = ctx.item;
+
+        String uniqueId = "";
+        if (item != null) {
+            ComplexType listType = getAutoType(item);
+
+            String gs = String.join("", ctx.generator_for().stream().map((g) -> g.iterId.getText()).toList());
+
+            uniqueId = String.format("_generator_%s_%s", gs, ctx.hashCode());
+
+            pendingAssertions.add(-1, String.format("List<%s> %s = new ArrayList<>();", listType.getJavaClassType(), uniqueId));
+
+        }
+
+        pendingAssertions.add(-1, "{");
+        int n = 0;
+        for (var generator : ctx.generator_for()) {
+            pendingAssertions.add(-1, String.format("for (var %s : %s) {", generator.iterId.getText(), visit(generator.collection)));
+            n++;
+        }
+
+        if (item != null) {
+            pendingAssertions.add(-1, String.format("%s.add(%s);", uniqueId, visit(item)));
+        }
+        else {
+            pendingAssertions.add(-1, String.format("%s", visit(ctx.blk)));
+        }
+
+        for (int i = 0; i < n; i++) {
+            pendingAssertions.add(-1, "}");
+        }
+        pendingAssertions.add(-1, "}");
+
+        return uniqueId;
+    }
+
+    @Override
+    public String visitListExpr(ListExprContext ctx) {
+        return String.format("new ArrayList<>(List.of(%s))", String.join(", ", ctx.expressionList() != null ? ctx.expressionList().expression().stream().map(this::visit).toList() : List.of()));
+    }
+
+    @Override
+    public String visitArrayAccessExpr(ArrayAccessExprContext ctx) {
+        var element = visit(ctx.element);
+
+        return String.format("%s.%s", visit(ctx.collection), element.equals("0") ? "getFirst()" : String.format("get(%s)", element));
+    }
+
+    @Override
+    public String visitSetExpr(SetExprContext ctx) {
+        return String.format("new ArrayList<>(new HashSet<>(List.of(%s)))", String.join(", ", ctx.expressionList() != null ? ctx.expressionList().expression().stream().map(this::visit).toList() : List.of()));
+    }
+
+    @Override
+    public String visitDictExpr(DictExprContext ctx) {
+        return String.format("new HashMap<>(Map.of(%s))", String.join(", ", ctx.expressionDict() != null ? ctx.expressionDict().dictElement().stream().map((s) -> String.join(", ", List.of(visit(s.key), visit(s.value)))).toList() : List.of()));
+    }
+
+    @Override
+    public String visitNullExpr(NullExprContext ctx) {
+        return "null";
+    }
+
+    @Override
+    public String visitImportDecl(ImportDeclContext ctx) {
+        return String.format("import%s %s%s;", ctx.static_ != null ? " static" : "", ctx.qualifiedId().getText(), ctx.wildcard != null ? ctx.wildcard.getText() : "");
+    }
+
+    @Override
+    public String visitIntExpr(IntExprContext ctx) {
         return ctx.INT().getText().toUpperCase();
     }
 
     @Override
-    public String visitAddSubExpr(FluxParser.AddSubExprContext ctx) {
+    public String visitAddSubExpr(AddSubExprContext ctx) {
         return String.format("%s %s %s", visit(ctx.expression(0)), ctx.operator.getText(), visit(ctx.expression(1)));
     }
 
@@ -355,44 +720,48 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
-    public String visitShiftExpr(FluxParser.ShiftExprContext ctx) {
+    public String visitShiftExpr(ShiftExprContext ctx) {
         return String.format("%s %s %s", visit(ctx.expression(0)), ctx.operator.getText(), visit(ctx.expression(1)));
     }
 
     @Override
-    public String visitTernaryExpr(FluxParser.TernaryExprContext ctx) {
+    public String visitTernaryExpr(TernaryExprContext ctx) {
         return String.format("((%s) ? %s : %s)", visit(ctx.condition), visit(ctx.true_), visit(ctx.false_));
     }
 
     @Override
     public String visitVariableAccessExpr(VariableAccessExprContext ctx) {
-        return String.format("%s.%s", visit(ctx.expression(0)), visit(ctx.expression(1)));
+        var mapped = typeTree.map(ctx);
+
+        return !mapped.isEmpty() ? mapped : String.format("%s.%s", visit(ctx.acc), visit(ctx.variable));
     }
 
     @Override
-    public String visitMulDivExpr(FluxParser.MulDivExprContext ctx) {
+    public String visitMulDivExpr(MulDivExprContext ctx) {
         return String.format("%s %s %s", visit(ctx.expression(0)), ctx.operator.getText(), visit(ctx.expression(1)));
     }
 
     @Override
-    public String visitEqualityExpr(FluxParser.EqualityExprContext ctx) {
+    public String visitEqualityExpr(EqualityExprContext ctx) {
         return String.format("%s %s %s", visit(ctx.expression(0)), ctx.operator.getText(), visit(ctx.expression(1)));
     }
 
     @Override
-    public String visitRelationalExpr(FluxParser.RelationalExprContext ctx) {
+    public String visitRelationalExpr(RelationalExprContext ctx) {
         var parent = ctx.getParent();
         String leftExpr = visit(ctx.expression(0));
         String rightExpression = visit(ctx.expression(1));
         String operator = ctx.operator.getText();
 
-        if (parent instanceof FluxParser.RelationalExprContext) {
-            if (ctx.expression(1) instanceof FluxParser.FunctionCallExprContext idExpr) {
-                var declaration = getDeclaration(idExpr.qualifiedId().getText(), ctx);
+        var program = getProgram(ctx);
+
+        if (parent instanceof RelationalExprContext) {
+            if (ctx.expression(1) instanceof FunctionCallExprContext idExpr) {
+                var declaration = getDeclaration(idExpr.ID().getText(), ctx);
 
                 if (declaration != null) {
                     String varName = "_" + declaration.id + "$" + ctx.hashCode();
-                    String typePrefix = (getDeclaration(varName, ctx) == null) ? declaration.type + " " : "";
+                    String typePrefix = (getDeclaration(varName, ctx) == null) ? declaration.type.getJavaType() + " " : "";
 
                     pendingAssertions.add(String.format("%s%s = %s;", typePrefix, varName, rightExpression));
 
@@ -406,7 +775,13 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @SafeVarargs
-    public final <T> T firstNonNull(T... objects) {
+    public static <T> List<T> listNonNull(T... objects) {
+        return Stream.of(objects)
+                .filter(Objects::nonNull).toList();
+    }
+
+    @SafeVarargs
+    public static <T> T firstNonNull(T... objects) {
         return Stream.of(objects)
                 .filter(Objects::nonNull)
                 .findFirst()
@@ -414,82 +789,82 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
-    public String visitBitwiseANDExpr(FluxParser.BitwiseANDExprContext ctx) {
+    public String visitBitwiseANDExpr(BitwiseANDExprContext ctx) {
         return String.format("%s & %s", visit(ctx.expression(0)), visit(ctx.expression(1)));
     }
 
     @Override
-    public String visitBitwiseXORExpr(FluxParser.BitwiseXORExprContext ctx) {
+    public String visitBitwiseXORExpr(BitwiseXORExprContext ctx) {
         return String.format("%s ^ %s", visit(ctx.expression(0)), visit(ctx.expression(1)));
     }
 
     @Override
-    public String visitBitwiseORExpr(FluxParser.BitwiseORExprContext ctx) {
+    public String visitBitwiseORExpr(BitwiseORExprContext ctx) {
         return String.format("%s | %s", visit(ctx.expression(0)), visit(ctx.expression(1)));
     }
 
     @Override
-    public String visitLogicalANDExpr(FluxParser.LogicalANDExprContext ctx) {
+    public String visitLogicalANDExpr(LogicalANDExprContext ctx) {
         return String.format("%s && %s", visit(ctx.expression(0)), visit(ctx.expression(1)));
     }
 
     @Override
-    public String visitCastExpr(FluxParser.CastExprContext ctx) {
+    public String visitCastExpr(CastExprContext ctx) {
         return String.format("(%s)%s", visit(ctx.type()), visit(ctx.expression()));
     }
 
     @Override
-    public String visitLogicalORExpr(FluxParser.LogicalORExprContext ctx) {
+    public String visitLogicalORExpr(LogicalORExprContext ctx) {
         return String.format("%s || %s", visit(ctx.expression(0)), visit(ctx.expression(1)));
     }
 
     @Override
-    public String visitUnaryExpr(FluxParser.UnaryExprContext ctx) {
+    public String visitUnaryExpr(UnaryExprContext ctx) {
         return ctx.operator.getText() + visit(ctx.expression());
     }
 
     @Override
-    public String visitDecimalExpr(FluxParser.DecimalExprContext ctx) {
-        String type = null;
+    public String visitDecimalExpr(DecimalExprContext ctx) {
+        ComplexType type = null;
         String text = ctx.DECIMAL().getText();
 
-        var varDecl = getToClosestParent(ctx, FluxParser.VarDeclContext.class);
+        var varDecl = getToClosestParent(ctx, VarDeclContext.class);
         if (varDecl != null) {
             var localType = simplifyLocalVarType(varDecl.localVarDecl());
 
             type = localType.type;
         }
-        var varStatDecl = getToClosestParent(ctx, FluxParser.VarDeclStatementContext.class);
+        var varStatDecl = getToClosestParent(ctx, VarDeclStatementContext.class);
         if (varStatDecl != null) {
             var localType = simplifyLocalVarType(varStatDecl.varDecl().localVarDecl());
 
             type = localType.type;
         }
-        var assignmentStat = getToClosestParent(ctx, FluxParser.AssignmentStatContext.class);
+        var assignmentStat = getToClosestParent(ctx, AssignmentStatContext.class);
         if (assignmentStat != null) {
             var assignment = getAssignment(assignmentStat);
 
             var declaration = getDeclaration(assignment.qualifiedId.getText(), ctx);
             if (declaration != null) {
-                type = convertType(declaration.type);
+                type = declaration.type;
             }
         }
-        var functionCallStat = getToClosestParent(ctx, FluxParser.FunctionCallExprContext.class);
+        var functionCallStat = getToClosestParent(ctx, FunctionCallExprContext.class);
         if (functionCallStat != null) {
             var functionDeclStat = firstNonNull(
                     Objects.requireNonNull(getToClosestSibling(ctx, FunctionDeclStatementContext.class)).functionDecl(),
-                    getToClosestSibling(ctx, FluxParser.FunctionDeclContext.class)
+                    getToClosestSibling(ctx, FunctionDeclContext.class)
             );
-            var formalParameters = functionDeclStat instanceof FluxParser.RunnableFunctionDeclContext ? ((RunnableFunctionDeclContext) functionDeclStat).formalParameters() : ((ConsumerFunctionDeclContext) functionDeclStat).formalParameters();
+            var formalParameters = functionDeclStat instanceof RunnableFunctionDeclContext ? ((RunnableFunctionDeclContext) functionDeclStat).formalParameters() : ((ConsumerFunctionDeclContext) functionDeclStat).formalParameters();
             if (formalParameters != null) {
                 int i = 0;
-                int j = whatParameterAmI(ctx, functionCallStat.expressionList());
+                int j = whatParameterAmI(ctx, functionCallStat.kwargs());
 
                 for (var parameter : formalParameters.formalParameter()) {
                     if (i == j) {
-                        var declaration = getDeclaration(parameter.ID().getText(), ctx);
+                        var declaration = getDeclaration(parameter.packedId().getText(), ctx);
                         if (declaration != null) {
-                            type = convertType(declaration.type);
+                            type = declaration.type;
                         }
                     }
                     i += 1;
@@ -498,18 +873,18 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
 
         if (type != null) {
-            if (type.equals("float"))
+            if (type.is("float"))
                 return text.endsWith("f") || text.endsWith("F") ? text : text + "f";
         }
         return ctx.DECIMAL().getText();
     }
 
     public static class LocalVarType {
-        public String type;
+        public ComplexType type;
         public String id;
         public ExpressionContext expression;
 
-        public LocalVarType(String type, String id, ExpressionContext expression) {
+        public LocalVarType(ComplexType type, String id, ExpressionContext expression) {
             this.type = type;
             this.id = id;
             this.expression = expression;
@@ -523,14 +898,21 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     public LocalVarType simplifyLocalVarType(LocalVarDeclContext ctx) {
         if (ctx instanceof StrictlyTypedLocalVarContext localCtx) {
-            return new LocalVarType(visit(localCtx.type()), localCtx.ID().getText(), localCtx.expression());
-        }
-        else if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
-            return new LocalVarType(getAutoType(localCtx.expression()), localCtx.ID().getText(), localCtx.expression());
+            return new LocalVarType(ctm.of(visit(localCtx.type())), localCtx.packedId().getText(), localCtx.expression());
+        } else if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
+            return new LocalVarType(getAutoType(localCtx.expression()), localCtx.packedId().getText(), localCtx.expression());
         }
         return null;
     }
 
+    public int whatParameterAmI(ParseTree ctx, KwargsContext parent) {
+        if (parent.expression() != null) {
+            return whatParameterAmI(ctx, parent.expression());
+        }
+        else {
+            return whatParameterAmI(ctx, parent.kwarg().stream().map(KwargContext::expression).toList());
+        }
+    }
 
     public int whatParameterAmI(ParseTree ctx, List<ExpressionContext> expressions) {
         for (int i = 0; i < expressions.size(); i++) {
@@ -538,7 +920,8 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
         return -1;
     }
-    public int whatParameterAmI(ParseTree ctx,  FluxParser.ExpressionListContext parent) {
+
+    public int whatParameterAmI(ParseTree ctx, ExpressionListContext parent) {
         return whatParameterAmI(ctx, parent.expression());
     }
 
@@ -554,29 +937,50 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public static class Declaration {
-        public String type;
+        public ComplexType type;
         public String id;
         public ParseTree declaration;
+        public ParserRuleContext scope;
+        private List<ParserRuleContext> scopeList;
 
-        public String declarationType = "var";
+        public ComplexType declarationType = ctm.of("var");
 
-        public Declaration(String type, String id, ParseTree declaration) {
+        public Declaration(ComplexType type, String id, ParseTree declaration) {
             this.type = type;
             this.id = id;
             this.declaration = declaration;
+            this.scope = getScopeList().getFirst();
         }
 
-        public Declaration(String type, String id, ParseTree declaration, String declarationType) {
+        public Declaration(ComplexType type, String id, ParseTree declaration, ComplexType declarationType) {
             this.type = type;
             this.id = id;
             this.declaration = declaration;
+            this.scope = getScopeList().getFirst();
 
             this.declarationType = declarationType;
         }
 
+        public List<ParserRuleContext> getScopeList() {
+            if (scopeList == null) {
+                scopeList = Declaration.getScopeList(declaration);
+            }
+            return scopeList;
+        }
+
+        public static List<ParserRuleContext> getScopeList(ParseTree ctx) {
+            return getToClosestParentsOfTypes(ctx,
+                            GeneratorExprContext.class,
+                            ReturnBlockContext.class,
+                            VoidBlockContext.class,
+                            ClassBlockContext.class,
+                            ProgramContext.class
+                    ).stream().filter((s) -> s instanceof ParserRuleContext).map((s) -> (ParserRuleContext) s).toList();
+        }
+
         @Override
         public String toString() {
-            return String.format("[%s %s%s]", type, id, declarationType.equals("function") ? "()" : "");
+            return String.format("[%s %s%s]", type, id, declarationType.is("function") ? "()" : "");
         }
     }
 
@@ -586,82 +990,74 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return program.javaCode.declarations.get(ctx);
     }
 
+    public List<ParserRuleContext> getChildrenPath(List<ParseTree> children, ParserRuleContext me) {
+        class ChildrenPathClass {
+            public static final List<ParserRuleContext> childrenMap = new ArrayList<>();
+
+            public static List<ParserRuleContext> getChildrenPath(List<ParseTree> children, ParserRuleContext me, AtomicBoolean foundMe) {
+                if (foundMe.get()) return childrenMap;
+
+                var validChildren = children.stream().filter((s) -> s instanceof ParserRuleContext).map((s) -> (ParserRuleContext) s).toList();
+                for (var child : validChildren) {
+                    if (foundMe.get()) break;
+
+                    if (!childrenMap.contains(child)) {
+
+                        childrenMap.add(child);
+                    }
+
+                    if (child.equals(me)) {
+                        foundMe.set(true);
+                        return childrenMap;
+                    }
+
+                    if (child.children != null)
+                        getChildrenPath(child.children, me, foundMe);
+                }
+                return childrenMap;
+            }
+        }
+
+        return ChildrenPathClass.getChildrenPath(children, me, new AtomicBoolean(false));
+    }
+
     public Declaration getDeclaration(String id, ParseTree ctx) {
         var program = getProgram(ctx);
 
-        var declaration = program.javaCode.declarations.values().stream().filter((d) -> d.id.equals(id)).findFirst();
+        var scopeList = Declaration.getScopeList(ctx);
 
-        if (declaration.isEmpty()) {
-            var funcSiblings = getToSiblingsOfType(ctx, FluxParser.FunctionDeclStatementContext.class);
-            if (!funcSiblings.isEmpty()) {
-                for (var sibling : funcSiblings) {
-                    var myDeclaration = simplifyDeclaration(sibling.functionDecl());
+        Declaration declaration = null;
+        for (var scope : scopeList) {
+            var declarations = program.javaCode.declarations.entrySet().stream().filter((s) -> s.getValue().scope == scope);
 
-                    if (myDeclaration != null) {
-                        if (id.equals(myDeclaration.id)) {
-                            String type = convertType(myDeclaration.type);
+            var candidates = declarations.filter((s) -> s.getValue().id.equals(id)).map(Map.Entry::getValue).toList();
 
-                            program.javaCode.HashDeclaration(ctx, type, id);
-                            return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
-                        }
-                    }
-                }
-            }
-
-            var varSiblings = getToSiblingsOfType(ctx, FluxParser.VarDeclStatementContext.class);
-            if (!varSiblings.isEmpty()) {
-                for (var sibling : varSiblings) {
-                    var myDeclaration = simplifyDeclaration(sibling.varDecl());
-
-                    if (myDeclaration != null) {
-                        if (id.equals(myDeclaration.id)) {
-                            String type = convertType(myDeclaration.type);
-
-                            program.javaCode.HashDeclaration(ctx, type, id);
-                            return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
-                        }
-                    }
-                }
-            }
-
-            var siblings = getToSiblingsOfType(ctx, FluxParser.DeclarationContext.class);
-            if (!siblings.isEmpty()) {
-                for (var sibling : siblings) {
-                    var myDeclaration = simplifyDeclaration(sibling);
-
-                    if (myDeclaration != null) {
-                        if (id.equals(myDeclaration.id)) {
-                            String type = convertType(myDeclaration.type);
-
-                            program.javaCode.HashDeclaration(ctx, type, id);
-                            return new Declaration(type, id, myDeclaration.declaration, myDeclaration.declarationType);
-                        }
-                    }
-                }
+            if (!candidates.isEmpty()) {
+                declaration = candidates.getLast();
+                break;
             }
         }
-        else return declaration.get();
 
-        return null;
+        return declaration;
     }
 
     @Override
-    public String visitPostfixExpr(FluxParser.PostfixExprContext ctx) {
+    public String visitPostfixExpr(PostfixExprContext ctx) {
         return String.format("%s%s", visit(ctx.expression()), ctx.operator.getText());
     }
 
     @Override
-    public String visitIdExpr(FluxParser.IdExprContext ctx) {
+    public String visitIdExpr(IdExprContext ctx) {
         return ctx.getText();
     }
 
     @Override
-    public String visitExpExpr(FluxParser.ExpExprContext ctx) {
+    public String visitExpExpr(ExpExprContext ctx) {
         return visitExp(ctx.expression(0), ctx.expression(1), ctx);
     }
 
     public String visitExp(Object exp1, Object exp2, ParseTree ctx) {
-        ensureImport(ctx, StandartFluxLibs.STATIC_MATH_UTILS);
+        ensureImport(ctx, StandardFluxLibs.STATIC_MATH_UTILS);
 
         return visitBinaryOp(exp1, exp2, ctx,
                 (e1, e2) -> String.format("power(%s, %s)", e1, e2));
@@ -673,20 +1069,21 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public String visitTetr(Object exp1, Object exp2, ParseTree ctx) {
-        ensureImport(ctx, StandartFluxLibs.STATIC_MATH_UTILS);
+        ensureImport(ctx, StandardFluxLibs.STATIC_MATH_UTILS);
 
         return visitBinaryOp(exp1, exp2, ctx,
                 (e1, e2) -> String.format("estimateTetration(%s, %s)", e1, e2));
     }
 
-    public FluxParser.DeclarationContext ensureImport(ParseTree ctx, String importPath) {
+    public DeclarationContext ensureImport(ParseTree ctx, String importPath) {
         return ensureImport(getProgram(ctx), importPath);
     }
-    public FluxParser.DeclarationContext ensureImport(FluxCompiler.Program program, String importPath) {
+
+    public DeclarationContext ensureImport(FluxCompiler.Program program, String importPath) {
         if (program != null && !program.imports.contains(importPath)) {
             var declarationCtx = program.addImport(importPath);
 
-            FluxParser.ImportDeclContext declCtx = declarationCtx.importDecl();
+            ImportDeclContext declCtx = declarationCtx.importDecl();
 
             int indent = program.javaCode.indentLevel;
 
@@ -696,7 +1093,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             program.javaCode.addLine(javaString, program.javaCode.lastImportsLine);
             program.javaCode.indentLevel = indent;
 
-            int index = javaString.length()+1;
+            int index = javaString.length() + 1;
 
             program.javaCode.lastImportsLine += index;
             program.javaCode.checkDeclaration(declarationCtx, index);
@@ -747,7 +1144,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
             getProgram(ctx).javaCode.HashDeclaration(ctx, declaration);
             var type = declaration.type;
-            if (!type.isEmpty() && ctx.type().type().isEmpty()) {
+            if (!type.getJavaType().isEmpty() && ctx.type().type().isEmpty()) {
                 typeString = typeString + "<>";
             }
         }
@@ -762,80 +1159,251 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                 continue;
             }
 
-            QualifiedIdContext qualifiedId = null;
-            if (expression instanceof IdExprContext idExpr) {
-                qualifiedId = idExpr.qualifiedId();
-            } else if (expression instanceof QualifiedIdContext idExpr) {
-                qualifiedId = idExpr;
+            String id = "";
+            if (expression instanceof IdExprContext expr) {
+                id = expr.qualifiedId().getText();
+            }
+            else if (expression instanceof QualifiedIdContext expr) {
+                id = expr.getText();
+            }
+            else if (expression instanceof PackedIdContext expr) {
+                id = expr.getText();
             }
 
-            if (qualifiedId != null) {
-                var declaration = getDeclaration(qualifiedId.getText(), ctx);
-                if (declaration != null && !declaration.type.equals("double")) {
-                    castString = String.format("(%s) ", declaration.type);
-                }
+            if (!id.isEmpty()) {
+                var decl = getDeclaration(id, ctx);
+
+                castString = String.format("(%s) ", decl.type.getFluxType());
             }
         }
         return castString;
     }
 
-    public String getAutoType(Object object) {
-        String type = object.toString();
+    public boolean canAutoPromote(ComplexType... types) {
+        Set<ComplexType> uniqueTypes = Arrays.stream(types).collect(Collectors.toSet());
+
+        Set<ComplexType> digits = Set.of(
+                ctm.of("double"),
+                ctm.of("float"),
+                ctm.of("long"),
+                ctm.of("int")
+        );
+
+        if (digits.containsAll(uniqueTypes)) {
+            return true;
+        }
+        if (uniqueTypes.contains(ctm.of("string"))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public ComplexType autoPromote(ComplexType... types) {
+        Set<ComplexType> uniqueTypes = Arrays.stream(types).collect(Collectors.toSet());
+
+        Set<ComplexType> digits = new OrderedHashSet<>(){{
+                add(ctm.of("double"));
+                add(ctm.of("float"));
+                add(ctm.of("long"));
+                add(ctm.of("int"));
+        }};
+
+        if (digits.containsAll(uniqueTypes)) {
+            for (var digit : digits) {
+                if (uniqueTypes.contains(digit)) {
+                    return digit;
+                }
+            }
+        }
+        if (uniqueTypes.contains(ctm.of("string"))) {
+            return ctm.of("string");
+        }
+
+        return null;
+    }
+
+    public ComplexType getAutoType(Object object) {
+        FluxCompiler.Program program = null;
+        if (object instanceof ParseTree expr) {
+            program = getProgram(expr);
+        }
+
+        ComplexType type = new ComplexType("unknown");
         if (object instanceof IdExprContext expr) {
-            type = expr.getText();
-        }
-        else if (object instanceof IntExprContext expr) {
-            type = expr.getText().toLowerCase().contains("l") ? "long" : "int";
-        }
-        else if (object instanceof DecimalExprContext expr) {
+            var decl = getDeclaration(expr.qualifiedId().getText(), expr);
+
+            if (decl != null) {
+                type = decl.type;
+            }
+            else type = ctm.of(expr.getText());
+        } else if (object instanceof CastExprContext expr) {
+            type = ctm.of(visit(expr.type()));
+        } else if (object instanceof IntExprContext expr) {
+            type = ctm.of(expr.getText().toLowerCase().contains("l") ? "long" : "int");
+        } else if (object instanceof DecimalExprContext expr) {
             if (expr.getText().toLowerCase().contains("f")) {
-                type = "float";
+                type = ctm.of("float");
+            } else {
+                type = ctm.of("double");
+            }
+        } else if (object instanceof BoolExprContext expr) {
+            type = ctm.of("boolean");
+        } else if (object instanceof StringExprContext expr) {
+            type = ctm.of("String");
+        } else if (object instanceof ParenthesizedExprContext expr) {
+            type = getAutoType(expr.expression());
+        } else if (object instanceof CharExprContext expr) {
+            type = ctm.of("char");
+        } else if (object instanceof AddSubExprContext expr) {
+            var typeLeft = getAutoType(expr.expression(0));
+            var typeRight = getAutoType(expr.expression(1));
+
+            if (canAutoPromote(typeLeft, typeRight)) {
+                type = autoPromote(typeLeft, typeRight);
+            }
+            else if (!typeLeft.equals(typeRight)) {
+                if (program.javaCode.checkPass())
+                    throw new UnsupportedOperationException("Cannot add/subtract values of two different types");
             }
             else {
-                type = "double";
+                type = typeLeft;
             }
-        }
-        else if (object instanceof BoolExprContext expr) {
-            type = "boolean";
-        }
-        else if (object instanceof StringExprContext expr) {
-            type = "String";
-        }
-        else if (object instanceof CharExprContext expr) {
-            type = "char";
-        }
-        else if (object instanceof TetrExprContext expr) {
-            var expressions = expr.expression();
-            for (var parameter : expressions) {
-                if (parameter instanceof IdExprContext idExpr) {
-                    var declaration = getDeclaration(idExpr.qualifiedId().getText(), expr);
+        } else if (object instanceof MulDivExprContext expr) {
+            var typeLeft = getAutoType(expr.expression(0));
+            var typeRight = getAutoType(expr.expression(1));
 
-                    if (declaration != null) {
-                        type = convertType(declaration.type);
+            if (canAutoPromote(typeLeft, typeRight)) {
+                type = autoPromote(typeLeft, typeRight);
+            }
+            else if (!typeLeft.equals(typeRight)) {
+                if (program.javaCode.checkPass())
+                    throw new UnsupportedOperationException("Cannot multiply/divide values of two different types");
+            }
+            else {
+                type = typeLeft;
+            }
+        } else if (object instanceof ExpExprContext expr) {
+            var typeLeft = getAutoType(expr.expression(0));
+            var typeRight = getAutoType(expr.expression(1));
+
+            if (canAutoPromote(typeLeft, typeRight)) {
+                type = autoPromote(typeLeft, typeRight);
+            }
+            else if (!typeLeft.equals(typeRight)) {
+                if (program.javaCode.checkPass())
+                    throw new UnsupportedOperationException("Cannot exponentiate values of two different types");
+            }
+            else {
+                type = typeLeft;
+            }
+        } else if (object instanceof TetrExprContext expr) {
+            var typeLeft = getAutoType(expr.expression(0));
+            var typeRight = getAutoType(expr.expression(1));
+
+            if (canAutoPromote(typeLeft, typeRight)) {
+                type = autoPromote(typeLeft, typeRight);
+            }
+            else if (!typeLeft.equals(typeRight)) {
+                if (program.javaCode.checkPass())
+                    throw new UnsupportedOperationException("Cannot tetrate values of two different types");
+            }
+            else {
+                type = typeLeft;
+            }
+        } else if (object instanceof FunctionCallExprContext expr) {
+            if (typeTree.containsKey(expr.ID().getText())) {
+                type = typeTree.get(expr.ID().getText()).typeFunction.apply(visit(expr));
+            } else {
+                var declaration = getDeclaration(expr.ID().getText(), expr);
+
+                if (declaration != null) {
+                    type = declaration.type;
+                }
+            }
+        } else if (object instanceof VarFunctionDeclContext expr) {
+            if (typeTree.containsKey(visit(expr.ID()))) {
+                type = typeTree.get(visit(expr.ID())).typeFunction.apply(visit(expr));
+            } else {
+                var declaration = simplifyDeclaration(expr);
+
+                if (declaration != null) {
+                    type = declaration.type;
+                }
+            }
+        } else if (object instanceof VariableAccessExprContext expr) {
+            var knownFunc = typeTree.get(expr);
+            if (knownFunc != null) {
+                type = knownFunc.typeFunction.apply(visit(expr));
+            } else {
+                var declaration = simplifyDeclaration(expr);
+
+                if (declaration != null) {
+                    type = declaration.type;
+                }
+            }
+        } else if (object instanceof ArrayExprContext expr) {
+            var localType = ctm.of("Object");
+            if (expr.expressionList() != null) {
+                localType = getAutoType(expr.expressionList().expression(0));
+                for (var el : expr.expressionList().expression()) {
+                    if (!Objects.equals(localType, getAutoType(el))) {
+                        localType = ctm.of("Object");
                         break;
                     }
                 }
             }
-        }
-        else if (object instanceof FunctionCallExprContext expr) {
-            var declaration = getDeclaration(expr.qualifiedId().getText(), expr);
 
-            if (declaration != null) {
-                type = declaration.type;
+            type = ctm.get("list", localType);
+        } else if (object instanceof SetExprContext expr) {
+            var localType = ctm.of("Object");
+            if (expr.expressionList() != null) {
+                localType = getAutoType(expr.expressionList().expression(0));
+                for (var el : expr.expressionList().expression()) {
+                    if (!Objects.equals(localType, getAutoType(el))) {
+                        localType = ctm.of("Object");
+                        break;
+                    }
+                }
             }
-        }
-        else if (object instanceof VarFunctionDeclContext expr) {
-            var declaration = simplifyDeclaration(expr);
 
-            if (declaration != null) {
-                type = declaration.type;
+            type = ctm.get("list", localType);
+        } else if (object instanceof DictExprContext expr) {
+            var localType = new ArrayList<>(List.of(ctm.of("Object"), ctm.of("Object")));
+            if (expr.expressionDict() != null) {
+                localType.set(0, getAutoType(expr.expressionDict().dictElement(0).key));
+                localType.set(1, getAutoType(expr.expressionDict().dictElement(0).value));
+                for (var el : expr.expressionDict().dictElement()) {
+                    if (!Objects.equals(localType.getFirst(), getAutoType(el.key))) {
+                        localType.set(0, ctm.of("Object"));
+                        break;
+                    }
+                }
+                for (var el : expr.expressionDict().dictElement()) {
+                    if (!Objects.equals(localType.get(1), getAutoType(el.value))) {
+                        localType.set(1, ctm.of("Object"));
+                        break;
+                    }
+                }
             }
-        }
-        else if (object instanceof ParseTree expr) {
-            type = "var";
+
+            type = ctm.get("dict", localType);
+        } else if (object instanceof ArrayAccessExprContext expr) {
+            type = getAutoType(expr.collection).subtypes.getFirst();
+        } else if (object instanceof GeneratorExprContext expr) {
+            ensureGeneratorDeclarations(expr);
+
+            var collectionType = getAutoType(expr.item);
+            type = ctm.get("list", collectionType);
+        } else if (object instanceof ParseTree expr) {
+            type = ctm.of("var");
         }
 
-        return convertType(type); // Just to be safe
+        if (type.is("unknown") && program != null) {
+            program.javaCode.hasUnknowns = true;
+        }
+
+        return type;
     }
 
     private String visitBinaryOp(Object exp1, Object exp2, ParseTree ctx, BiFunction<String, String, String> formatter) {
@@ -849,39 +1417,36 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
-    public String visitParenthesizedExpr(FluxParser.ParenthesizedExprContext ctx) {
+    public String visitParenthesizedExpr(ParenthesizedExprContext ctx) {
         return String.format("(%s)", visit(ctx.expression()));
     }
 
     @Override
-    public String visitNotExpr(FluxParser.NotExprContext ctx) {
+    public String visitNotExpr(NotExprContext ctx) {
         return '!' + visit(ctx.expression());
     }
 
     @Override
-    public String visitBoolExpr(FluxParser.BoolExprContext ctx) {
+    public String visitBoolExpr(BoolExprContext ctx) {
         return ctx.getText().toLowerCase();
     }
 
     @Override
     public String visitStringExpr(StringExprContext ctx) {
-        return String.format("\"%s\"", ctx.getText().substring(1, ctx.getText().length()-1)).replace("\\'", "'");
+        return String.format("\"%s\"", ctx.getText().substring(1, ctx.getText().length() - 1)).replace("\\'", "'");
     }
 
     @Override
     public String visitFStringExpr(FStringExprContext ctx) {
-        String st = ctx.fstring().STRING().getText();
-        st = String.format("\"%s\"", st.substring(1, st.length()-1)).replace("\\'", "'");
+        var st = new ArrayList<>(){{
+            add(ctx.fstring().FSTRING_OPENING());
+            addAll(ctx.fstring().FSTRING_MIDDLE());
+            add(ctx.fstring().FSTRING_CLOSING());
+        }}.stream().map(Object::toString).toList();
 
-        String g = "";
+        String expressions = String.join(", ", ctx.fstring().expression().stream().map(this::visit).toList());
 
-        while (st.contains("{") && st.contains("}")) {
-            g += ", ";
-            g += st.substring(st.indexOf("{") + 1, st.indexOf("}"));
-            st = st.substring(0, st.indexOf("{")) + "%s" + st.substring(st.indexOf("}")+1);
-        }
-
-        return "String.format(" + st + g + ")";
+        return "String.format(" + String.join("", st).replace("{}", "%s") + (!expressions.isEmpty() ? ", "  + expressions : "") + ")";
     }
 
     @Override
@@ -891,54 +1456,132 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitVoidBlockStatement(VoidBlockStatementContext ctx) {
-        return visitBlock(ctx, ctx.voidBlock().voidLines());
+        return visitBlock(ctx.voidBlock().voidLines());
     }
 
     @Override
     public String visitVoidBlock(VoidBlockContext ctx) {
-        return visitBlock(ctx, ctx.voidLines());
+        return visitBlock(ctx.voidLines());
     }
 
     @Override
-    public String visitReturnBlock(ReturnBlockContext ctx) {
-        return visitBlock(ctx, ctx.expressionLines());
+    public String visitClassBlock(ClassBlockContext ctx) {
+        return "{" + visit(ctx.classLines()) + "\n" + "}";
     }
 
     @Override
-    public String visitExpressionReturn(ExpressionReturnContext ctx) {
-        return String.format("return %s;", visit(ctx.expression()));
-    }
-
-    public String visitBlock(ParseTree ctx, ParseTree lines) {
+    public String visitClassLines(ClassLinesContext ctx) {
         var program = getProgram(ctx);
 
-        StringBuilder blockCode = new StringBuilder("{");
-        program.javaCode.indentLevel++;
-        for (int i = 0; i < lines.getChildCount(); i++) {
-            var line = lines.getChild(i);
-            if (line != null && !(line instanceof TerminatorContext)) {
-                blockCode.append("\r").append("\t".repeat(program.javaCode.indentLevel)).append(visit(line));
+        StringBuilder blockCode = new StringBuilder();
+
+        var lines = new ArrayList<>(ctx.children);
+
+        var otherLines = new ArrayList<ParseTree>();
+        for (var line : lines) {
+            if (line instanceof DeclarationContext declaration) {
+                processDeclaration(declaration, program);
+            } else {
+                otherLines.add(line);
             }
         }
-        program.javaCode.indentLevel--;
-        blockCode.append("\r").append("\t".repeat(program.javaCode.indentLevel)).append("}");
+
+        for (var line : otherLines) {
+            var s = visit(line);
+
+            for (var assertion : pendingAssertions) {
+                blockCode.append("\n").append(assertion);
+            }
+            pendingAssertions.clear();
+
+            if (line != null && !(line instanceof TerminatorContext)) {
+                blockCode.append("\n").append(s);
+            }
+        }
+
         return blockCode.toString();
     }
 
     @Override
-    public String visitVarDeclStatement(FluxParser.VarDeclStatementContext ctx) {
+    public String visitReturnBlock(ReturnBlockContext ctx) {
+        return visitBlock(ctx.expressionLines());
+    }
+
+    @Override
+    public String visitExpressionReturn(ExpressionReturnContext ctx) {
+        var program = getProgram(ctx);
+        var statementBuilder = new StringBuilder();
+
+        var expression = visit(ctx.expression());
+
+        for (var assertion : pendingAssertions) {
+            statementBuilder.append("\n").append(assertion);
+        }
+        pendingAssertions.clear();
+
+        statementBuilder.append(String.format("return %s;", expression));
+
+        return statementBuilder.toString();
+    }
+
+    public String visitBlock(ParseTree lines) {
+        if (lines != null) {
+            return "{" + visitLines(lines) + "}";
+        }
+        return "{}";
+    }
+
+    public String visitLines(ParseTree lines) {
+        var program = getProgram(lines);
+
+        StringBuilder blockCode = new StringBuilder();
+        for (int i = 0; i < lines.getChildCount(); i++) {
+            var line = lines.getChild(i);
+            if (line != null && !(line instanceof TerminatorContext)) {
+
+                if (isDeclaration(line)) {
+                    program.javaCode.HashDeclaration(line, simplifyDeclaration(line));
+                }
+
+                var l = visit(line);
+
+                for (var assertion : pendingAssertions) {
+                    blockCode.append("\n").append(assertion);
+                }
+                pendingAssertions.clear();
+
+                blockCode.append("\n").append(l);
+            }
+        }
+
+        blockCode.append("\n");
+        return blockCode.toString();
+    }
+
+    @Override
+    public String visitVoidLines(VoidLinesContext ctx) {
+        return visitLines(ctx);
+    }
+
+    @Override
+    public String visitExpressionLines(ExpressionLinesContext ctx) {
+        return visitLines(ctx);
+    }
+
+    @Override
+    public String visitVarDeclStatement(VarDeclStatementContext ctx) {
         return visitVarDecl(ctx.varDecl());
     }
 
     @Override
-    public String visitIfStatement(FluxParser.IfStatementContext ctx) {
+    public String visitIfStatement(IfStatementContext ctx) {
         StringBuilder builderElseifString = new StringBuilder();
         for (int i = 1; i < ctx.expression().size(); i++) {
             builderElseifString.append(String.format("else if (%s) %s", visit(ctx.expression(i)), visit(ctx.block(i))));
         }
         String elseString = "";
         if (ctx.else_ != null) {
-            elseString = String.format("else %s", visit(ctx.block(ctx.block().size()-1)));
+            elseString = String.format("else %s", visit(ctx.block(ctx.block().size() - 1)));
         }
         return String.format("if (%s) %s%s%s", visit(ctx.expression(0)), visit(ctx.block(0)), builderElseifString, elseString);
     }
@@ -950,21 +1593,141 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitForeachStatement(ForeachStatementContext ctx) {
-        return String.format("for (%s %s : %s) %s", ctx.type() != null ? visit(ctx.type()) : "var", visit(ctx.ID()), visit(ctx.expression()), visit(ctx.block()));
+        var program = getProgram(ctx);
+
+        var collection = ctx.expression();
+
+        var type = getAutoType(collection);
+
+        List<String> idList;
+        if (ctx.packedId().idList() != null) {
+            idList = ctx.packedId().idList().ID().stream().map(ParseTree::getText).toList();
+        }
+        else {
+            idList = List.of(ctx.packedId().ID().getText());
+        }
+
+        if (type.is("dict") && idList.size() > 2) {
+            throw new UnsupportedOperationException("Cannot map dictionaries to any amount of values other than 2.");
+        }
+
+        StringBuilder statementBuilder = new StringBuilder();
+
+        var collectionValue = visit(collection);
+
+        for (var assertion : pendingAssertions) {
+            statementBuilder.append("\n").append(assertion);
+        }
+        pendingAssertions.clear();
+
+        statementBuilder.append("for (var ");
+
+        String splitListName = String.format("_%s_%s", String.join("", idList), collection.hashCode());
+
+        statementBuilder.append(idList.size() == 2 ? splitListName : idList.getFirst()).append(" : ").append(collectionValue).append(type.is("dict") ? ".entrySet()" : "").append(") {");
+
+        if (type.is("dict") && idList.size() == 2) {
+            statementBuilder.append("\n");
+
+            int i = 0;
+            for (var id : idList) {
+                statementBuilder.append(String.format("%s %s = %s", type.subtypes.get(i), id, splitListName));
+
+                if (i == 0)
+                    statementBuilder.append(".getKey()");
+                else
+                    statementBuilder.append(".getValue()");
+                if (i < idList.size() - 1) statementBuilder.append("; ");
+
+                i++;
+            }
+            statementBuilder.append(";");
+        }
+        else if (!type.is("dict") && idList.size() > 1) {
+            statementBuilder.append("\n");
+
+            int i = 0;
+            for (var id : idList) {
+                statementBuilder.append(String.format("%s %s = %s", type.getJavaType(), id, splitListName));
+
+                if (i != 0)
+                    statementBuilder.append(String.format(".get(%s %s %s.size())", i, "%", splitListName));
+                else
+                    statementBuilder.append(".getFirst()");
+                if (i < idList.size() - 1) statementBuilder.append("; ");
+
+                i++;
+            }
+            statementBuilder.append(";");
+        }
+
+        var block = ctx.block();
+
+        String blockLines = "";
+        if (block instanceof VoidBlockOptionContext bl) {
+            blockLines = visit(bl.voidBlock().voidLines());
+        }
+        else if (block instanceof ReturnBlockOptionContext bl) {
+            blockLines = visit(bl.returnBlock().expressionLines());
+        }
+
+        statementBuilder.append("\n").append(blockLines);
+
+        statementBuilder.append("\n").append("}");
+
+        return statementBuilder.toString();
+    }
+
+    public ParseTree getDeclarationValue(Declaration declaration) {
+        ParseTree ctx = declaration.declaration;
+        if (ctx instanceof VarDeclContext decl) {
+            if (decl.localVarDecl() instanceof LooselyTypedLocalVarContext d) {
+                return d.expression();
+            }
+            else if (decl.localVarDecl() instanceof StrictlyTypedLocalVarContext d) {
+                return d.expression();
+            }
+        }
+        else if (ctx instanceof LooselyTypedLocalVarContext decl) {
+            return decl.expression();
+        }
+        else if (ctx instanceof StrictlyTypedLocalVarContext decl) {
+            return decl.expression();
+        }
+        print(ctx.getClass());
+        throw new RuntimeException("Unsupported declaration value unpacking: " + declaration);
+    }
+
+    public ParseTree getNode(ParseTree ctx) {
+        if (ctx instanceof IdExprContext expr) {
+            return getDeclarationValue(getDeclaration(expr.qualifiedId().getText(), ctx));
+        } else if (ctx instanceof PackedIdContext expr) {
+            return getDeclarationValue(getDeclaration(expr.getText(), ctx));
+        }
+        return ctx;
+    }
+
+    @Override
+    public String visitPackedId(PackedIdContext ctx) {
+        return ctx.getText();
     }
 
     @Override
     public String visit(ParseTree ctx) {
-        if (ctx instanceof TerminalNodeImpl terminalNode) return terminalNode.getText();
+//        print("Visiting", ctx.getClass().getSimpleName(), ctx.getText().substring(0, Math.min(20, ctx.getText().length())));
+        if (ctx != null) {
+            if (ctx instanceof TerminalNodeImpl terminalNode) return terminalNode.getText();
 
-        return super.visit(ctx);
+            return super.visit(ctx);
+        }
+        return "";
     }
 
     @Override
     public String visitRunnableFunctionDecl(RunnableFunctionDeclContext ctx) {
         getProgram(ctx).javaCode.HashDeclaration(ctx, simplifyDeclaration(ctx));
-        return visitFunction(
-                convertType("void"),
+        return visitFunction(ctx.annotation(),
+                ctm.of("void"),
                 ctx.ID().getText(),
                 ctx.formalParameters(),
                 ctx.voidBlock(),
@@ -975,8 +1738,8 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitConsumerFunctionDecl(ConsumerFunctionDeclContext ctx) {
         getProgram(ctx).javaCode.HashDeclaration(ctx, simplifyDeclaration(ctx));
-        return visitFunction(
-                visit(ctx.type()),
+        return visitFunction(ctx.annotation(),
+                ctm.of(visit(ctx.type())),
                 ctx.ID().getText(),
                 ctx.formalParameters(),
                 ctx.returnBlock(),
@@ -987,7 +1750,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitVarFunctionDecl(VarFunctionDeclContext ctx) {
         getProgram(ctx).javaCode.HashDeclaration(ctx, simplifyDeclaration(ctx));
-        return visitFunction(
+        return visitFunction(ctx.annotation(),
                 getAutoType(ctx),
                 ctx.ID().getText(),
                 ctx.formalParameters(),
@@ -996,7 +1759,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         );
     }
 
-    public String visitFunction(String returnType, String functionName, FluxParser.FormalParametersContext formalParameters, ParseTree block, FluxParser.FunctionModifiersContext funcModifiers) {
+    public String visitFunction(List<AnnotationContext> annotations, ComplexType returnType, String functionName, FormalParametersContext formalParameters, ParseTree block, FunctionModifiersContext funcModifiers) {
 
         String parameters = "";
         if (formalParameters != null) {
@@ -1009,10 +1772,10 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         String functionModifiers = parseFunctionModifiers(funcModifiers);
 
-        return String.format("%s%s %s(%s) %s", functionModifiers, returnType, functionName, parameters, body);
+        return String.format("%s%s%s %s(%s) %s", annotations != null ? String.join("\n", annotations.stream().map(this::visit).toList()) + "\n" : "", functionModifiers, returnType.getJavaType(), functionName, parameters, body);
     }
 
-    public String parseFunctionModifiers(FluxParser.FunctionModifiersContext ctx) {
+    public String parseFunctionModifiers(FunctionModifiersContext ctx) {
         StringBuilder builder = new StringBuilder();
 
         if (ctx.accessModifier() != null) {
@@ -1043,41 +1806,65 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
-    public String visitFunctionCallExpr(FluxParser.FunctionCallExprContext ctx) {
+    public String visitFunctionCallExpr(FunctionCallExprContext ctx) {
+        String functionName = ctx.ID().getText();
+
+        if (typeTree.containsKey(functionName)) {
+            for (var imp : typeTree.get(functionName).imports) {
+                ensureImport(ctx, imp);
+            }
+        }
+
         String localClassString = "";
 
-        var sibling = getToClosestSibling(ctx.getParent(), FluxParser.FunctionDeclStatementContext.class);
-        if (sibling != null) {
-            var declaration = getDeclaration(ctx.qualifiedId().getText(), ctx);
+        var declaration = getDeclaration(functionName, ctx);
 
-            if (declaration != null) {
+        if (declaration != null) {
 
-                var parent1 = firstNonNull(
-                        getToClosestParent(declaration.declaration, RunnableFunctionDeclContext.class),
-                        getToClosestParent(declaration.declaration, ConsumerFunctionDeclContext.class));
-                var parent2 = firstNonNull(
-                        getToClosestParent(ctx, RunnableFunctionDeclContext.class),
-                        getToClosestParent(ctx, ConsumerFunctionDeclContext.class));
-                if (parent1 != null && parent2 != null) {
-                    if (declaration.id.equals(ctx.qualifiedId().getText()) && parent1.equals(parent2)) {
-                        localClassString = String.format("_class_%s$%s.", declaration.id, sibling.functionDecl().hashCode());
-                    }
+            var parent1 = firstNonNull(
+                    getToClosestParent(declaration.declaration, RunnableFunctionDeclContext.class),
+                    getToClosestParent(declaration.declaration, ConsumerFunctionDeclContext.class));
+            var parent2 = firstNonNull(
+                    getToClosestParent(ctx, RunnableFunctionDeclContext.class),
+                    getToClosestParent(ctx, ConsumerFunctionDeclContext.class));
+            if (parent1 != null && parent2 != null) {
+                if (declaration.id.equals(ctx.ID().getText()) && parent1.equals(parent2)) {
+                    localClassString = String.format("_class_%s$%s.", declaration.id, declaration.declaration.hashCode());
                 }
             }
         }
 
-        String functionName = ctx.qualifiedId().getText();
         String args = "";
-        if (ctx.expressionList() != null) {
-            args = ctx.expressionList().expression().stream()
-                    .map(this::visit)
-                    .collect(Collectors.joining(", "));
+        if (ctx.kwargs() != null) {
+            if (ctx.kwargs().expression() != null && !ctx.kwargs().expression().isEmpty()) {
+                args = ctx.kwargs().expression().stream()
+                        .map(this::visit)
+                        .collect(Collectors.joining(", "));
+            }
+            else {
+                args = ctx.kwargs().kwarg().stream()
+                        .map(this::visit)
+                        .collect(Collectors.joining(", "));
+            }
+
         }
-        return localClassString + functionName + "(" + args + ")";
+        var candidate = functionName + "(" + args + ")";
+
+        KnownFunction knownFunc = typeTree.get(functionName);
+
+        return localClassString + (knownFunc != null ? knownFunc.mappingFunction.apply(candidate) : candidate);
     }
 
-    public String visitFormalParameter(FluxParser.FormalParameterContext ctx) {
-        return visit(ctx.type()) + " " + ctx.ID().getText();
+    @Override
+    public String visitKwarg(KwargContext ctx) {
+        return String.format("%s=%s", ctx.ID().getText(), visit(ctx.expression()));
+    }
+
+    public String visitFormalParameter(FormalParameterContext ctx) {
+        var type = visit(ctx.type());
+        var id = ctx.packedId().getText();
+
+        return type + " " + id;
     }
 
     @Override
@@ -1092,7 +1879,19 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitExpressionReturnStatement(ExpressionReturnStatementContext ctx) {
-        return "return " + visit(ctx.expressionReturn().expression()) + ";";
+        var program = getProgram(ctx);
+        var statementBuilder = new StringBuilder();
+
+        var expression = visit(ctx.expressionReturn().expression());
+
+        for (var assertion : pendingAssertions) {
+            statementBuilder.append("\n").append(assertion);
+        }
+        pendingAssertions.clear();
+
+        statementBuilder.append(String.format("return %s;", expression));
+
+        return statementBuilder.toString();
     }
 
     @Override
@@ -1101,18 +1900,19 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         var functionDecl = ctx.functionDecl();
         var declaration = simplifyDeclaration(functionDecl);
+
         program.javaCode.HashDeclaration(ctx, declaration);
 
-        program.javaCode.indentLevel++;
         String uniqueId = String.format("%s$%s", declaration.id, functionDecl.hashCode());
-        String text = String.format("class _Class_%s {%s\n}\nvar _class_%s = new _Class_%s();", uniqueId, "\r" + "\t".repeat(program.javaCode.indentLevel) + visit(ctx.functionDecl()), uniqueId, uniqueId);
-        program.javaCode.indentLevel--;
+        String text = String.format("class _Class_%s {%s\n}\nvar _class_%s = new _Class_%s();", uniqueId, "\n" + visit(ctx.functionDecl()), uniqueId, uniqueId);
 
         return text;
     }
 
+
+
     @Override
-    public String visitAssignmentStatement(FluxParser.AssignmentStatementContext ctx) {
+    public String visitAssignmentStatement(AssignmentStatementContext ctx) {
         var assignment = getAssignment(ctx);
 
         if (assignment != null) {
@@ -1120,13 +1920,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                 String idString = assignment.qualifiedId.getText();
 
                 return String.format("%s %s %s;", idString, assignment.operator, visit(assignment.expression));
-            }
-            else if (assignment.assignmentType.equals("exp")) {
+            } else if (assignment.assignmentType.equals("exp")) {
                 String idString = assignment.qualifiedId.getText();
 
                 return String.format("%s = %s;", idString, visitExp(assignment.qualifiedId, assignment.expression, ctx));
-            }
-            else if (assignment.assignmentType.equals("floorDiv")) {
+            } else if (assignment.assignmentType.equals("floorDiv")) {
                 String idString = assignment.qualifiedId.getText();
 
                 return String.format("%s = %s;", idString, visitExp(assignment.qualifiedId, assignment.expression, ctx));
@@ -1135,22 +1933,20 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return "";
     }
 
-    public Assignment getAssignment(FluxParser.AssignmentStatContext ctx) {
+    public Assignment getAssignment(AssignmentStatContext ctx) {
         if (ctx instanceof DefaultAssigmnentContext assignment) {
             return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "default");
-        }
-        else if (ctx instanceof ExpAssigmnentContext assignment) {
+        } else if (ctx instanceof ExpAssigmnentContext assignment) {
             return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "exp");
-        }
-        else if (ctx instanceof FloorDivAssigmnentContext assignment) {
+        } else if (ctx instanceof FloorDivAssigmnentContext assignment) {
             return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "floorDiv");
-        }
-        else if (ctx instanceof CeilDivAssigmnentContext assignment) {
+        } else if (ctx instanceof CeilDivAssigmnentContext assignment) {
             return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "ceilDiv");
         }
         return null;
     }
-    public Assignment getAssignment(FluxParser.AssignmentStatementContext ctx) {
+
+    public Assignment getAssignment(AssignmentStatementContext ctx) {
         return getAssignment(ctx.assignmentStat());
     }
 
@@ -1170,14 +1966,14 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     @Override
-    public String visitExpressionStatement(FluxParser.ExpressionStatementContext ctx) {
+    public String visitExpressionStatement(ExpressionStatementContext ctx) {
         return visit(ctx.expression()) + ";";
     }
 
     @Override
-    public String visitVarDecl(FluxParser.VarDeclContext ctx) {
+    public String visitVarDecl(VarDeclContext ctx) {
         String variableModifiers = parseVariableModifiers(ctx.variableModifiers());
-        return visitVar(ctx.localVarDecl(), variableModifiers, true) + ";";
+        return visitVar(ctx.localVarDecl(), variableModifiers, true) + ";\n";
     }
 
     @Override
@@ -1190,114 +1986,193 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return visitVar(ctx, "", false);
     }
 
-    @Override
-    public String visitLooselyTypedLocalVars(LooselyTypedLocalVarsContext ctx) {
-        return visitVar(ctx, "", false);
-    }
-
-    @Override
-    public String visitStrictlyTypedLocalVars(StrictlyTypedLocalVarsContext ctx) {
-        return visitVar(ctx, "", false);
-    }
-
     public String visitVar(LocalVarDeclContext ctx, String variableModifiers, boolean globalDecl) {
         var localType = simplifyLocalVarType(ctx);
 
-        String type = localType.type;
-        String id = localType.id;
-        getProgram(ctx).javaCode.HashDeclaration(ctx, type, id);
+        var program = getProgram(ctx);
 
-        ExpressionContext expression = null;
-        if (ctx instanceof StrictlyTypedLocalVarContext localCtx) {
-            expression = localCtx.expression();
-        }
-        else if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
-            expression = localCtx.expression();
+        ComplexType type = localType.type;
+        String Id = localType.id;
+
+        List<String> idList = Id.contains(",") ? List.of(Id.split(",")) : List.of(Id);
+
+        if (type.is("dict") && idList.size() > 2) {
+            throw new UnsupportedOperationException("Cannot map dictionaries to any amount of values other than 2.");
         }
 
         StringBuilder statementBuilder = new StringBuilder();
 
-        if (expression != null) {
-
-            String expressionValue = visit(expression);
-
-            if (globalDecl && type.equals("var")) {
-                type = getAutoType(expression);
-            }
-
-            for (String assertion : pendingAssertions) {
-                statementBuilder.append(assertion).append("\n");
-            }
-            pendingAssertions.clear();
-
-            statementBuilder.append(String.format("%s%s %s = %s", variableModifiers, type, id, expressionValue));
-
-        }  else {
-            for (String assertion : pendingAssertions) {
-                statementBuilder.append(assertion).append("\n");
-            }
-            pendingAssertions.clear();
-
-            statementBuilder.append(String.format("%s%s %s", variableModifiers, type, id));
+        ExpressionContext expression = null;
+        if (ctx instanceof StrictlyTypedLocalVarContext localCtx) {
+            expression = localCtx.expression();
+        } else if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
+            expression = localCtx.expression();
         }
+
+        String splitListName = String.format("_%s_%s", String.join("", idList), expression != null ? expression.hashCode() : "");
+        if (idList.size() > 1) {
+            String expressionValue = visit(expression);
+            pendingAssertions.add(String.format("List<%s> %s = %s;", type.getJavaClassType(), splitListName, expressionValue));
+        }
+
+        for (int i = 0; i < idList.size(); i++) {
+            var id = idList.get(i);
+
+            getProgram(ctx).javaCode.HashDeclaration(ctx, type, id);
+
+            if (expression != null) {
+
+                String expressionValue = idList.size() > 1 ? splitListName : visit(expression);
+
+                if (globalDecl && type.is("var")) {
+                    type = getAutoType(expression);
+                }
+                if (type.is("unknown")) {
+                    type = ctm.of("var"); // At least try to capture the type using native java var handling
+                }
+
+                for (var assertion : pendingAssertions) {
+                    statementBuilder.append("\n").append(assertion);
+                }
+                pendingAssertions.clear();
+
+                statementBuilder.append(String.format("%s%s %s = %s", variableModifiers, type.getJavaType(), id, expressionValue));
+
+            } else {
+                for (var assertion : pendingAssertions) {
+                    statementBuilder.append("\n").append(assertion);
+                }
+                pendingAssertions.clear();
+
+                statementBuilder.append(String.format("%s%s %s", variableModifiers, type.getJavaType(), id));
+            }
+
+            if (idList.size() > 1) {
+                if (i != 0)
+                    statementBuilder.append(String.format(".get(%s %s %s.size())", i, "%", splitListName));
+                else
+                    statementBuilder.append(".getFirst()");
+                if (i < idList.size() - 1) statementBuilder.append("; ");
+            }
+        }
+
         return statementBuilder.toString();
     }
 
+    private static final HashMap<List<Object>, ParseTree> getToClosestParentCache = new HashMap<>();
     public static <T extends ParseTree> T getToClosestParent(ParseTree ctx, Class<T> targetType) {
-        ParseTree parent = ctx.getParent();
+        var key = List.of(ctx, targetType);
+        if (!getToClosestParentCache.containsKey(key)) {
+            ParseTree parent = ctx.getParent();
 
-        if (parent != null) {
-            if (targetType.isInstance(parent)) {
+            if (parent != null) {
+                if (targetType.isInstance(parent)) {
+                    var cast = targetType.cast(parent);
+                    getToClosestParentCache.put(key, cast);
 
-                return targetType.cast(parent);
-            } else {
-                return getToClosestParent(parent, targetType);
+                    return cast;
+                } else {
+                    return getToClosestParent(parent, targetType);
+                }
+            }
+
+            return null;
+        }
+
+        return (T) getToClosestParentCache.get(key);
+    }
+
+    private static final HashMap<List<Object>, List<ParseTree>> getToClosestParentsOfTypesCache = new HashMap<>();
+    public static List<ParseTree> getToClosestParentsOfTypes(ParseTree ctx, Class<? extends ParseTree>... targetTypes) {
+        class ClosestParentsOfTypes {
+            public final List<ParseTree> parents = new ArrayList<>();
+
+            public List<ParseTree> getToClosestParentsOfTypes(ParseTree ctx, Class<? extends ParseTree>... targetTypes) {
+                var key = List.of(ctx, targetTypes);
+                if (!getToClosestParentsOfTypesCache.containsKey(key)) {
+                    ParseTree parent = ctx.getParent();
+
+                    if (parent != null) {
+                        for (var type : targetTypes) {
+                            if (type.isInstance(parent)) {
+                                var cast = type.cast(parent);
+
+                                parents.add(cast);
+
+                                getToClosestParentsOfTypesCache.put(key, parents);
+                            }
+                        }
+
+                        getToClosestParentsOfTypes(parent, targetTypes);
+                        return parents;
+                    }
+
+                    return parents;
+                }
+
+                return getToClosestParentsOfTypesCache.get(key);
             }
         }
 
-        return null;
+        return new ClosestParentsOfTypes().getToClosestParentsOfTypes(ctx, targetTypes);
     }
 
+    private static final HashMap<List<Object>, ParseTree> getToClosestSiblingCache = new HashMap<>();
     public static <T extends ParseTree> T getToClosestSibling(ParseTree ctx, Class<T> targetType) {
-        ParseTree parent = ctx.getParent();
+        var key = List.of(ctx, targetType);
+        if (!getToClosestSiblingCache.containsKey(key)) {
+            ParseTree parent = ctx.getParent();
 
-        if (parent != null) {
-            for (int i = 0; i < parent.getChildCount(); i++) {
-                var sibling = parent.getChild(i);
-                if (targetType.isInstance(sibling)) {
-                    return targetType.cast(sibling);
+            if (parent != null) {
+                for (int i = 0; i < parent.getChildCount(); i++) {
+                    var sibling = parent.getChild(i);
+                    if (targetType.isInstance(sibling)) {
+                        var cast = targetType.cast(sibling);
+                        getToClosestSiblingCache.put(key, cast);
+
+                        return cast;
+                    }
                 }
+                return getToClosestSibling(parent, targetType);
             }
-            return getToClosestSibling(parent, targetType);
+
+            return null;
         }
 
-        return null;
+        return (T) getToClosestSiblingCache.get(key);
     }
 
+    private static final HashMap<List<Object>, List<? extends ParseTree>> getToSiblingsOfTypeCache = new HashMap<>();
     public static <T extends ParseTree> List<T> getToSiblingsOfType(ParseTree ctx, Class<T> targetType) {
-        ParseTree parent = ctx.getParent();
-        List<T> siblings = new ArrayList<>();
+        var key = List.of(ctx, targetType);
+        if (!getToSiblingsOfTypeCache.containsKey(key)) {
+            ParseTree parent = ctx.getParent();
+            List<T> siblings = new ArrayList<>();
 
-        if (parent != null) {
-            boolean found = false;
-            for (int i = 0; i < parent.getChildCount(); i++) {
-                var sibling = parent.getChild(i);
-                if (targetType.isInstance(sibling)) {
-                    found = true;
-                    siblings.add(targetType.cast(sibling));
+            if (parent != null) {
+                boolean found = false;
+                for (int i = 0; i < parent.getChildCount(); i++) {
+                    var sibling = parent.getChild(i);
+                    if (targetType.isInstance(sibling)) {
+                        found = true;
+                        siblings.add(targetType.cast(sibling));
+                    }
+                }
+                if (!found) {
+                    for (var sibling : getToSiblingsOfType(parent, targetType)) {
+                        siblings.add(targetType.cast(sibling));
+                    }
                 }
             }
-            if (!found) {
-                for (var sibling : getToSiblingsOfType(parent, targetType)) {
-                    siblings.add(targetType.cast(sibling));
-                }
-            }
+
+            getToSiblingsOfTypeCache.put(key, siblings);
+
+            return siblings;
         }
-
-        return siblings;
+        return (List<T>) getToSiblingsOfTypeCache.get(key);
     }
 
-    public String parseVariableModifiers(FluxParser.VariableModifiersContext ctx) {
+    public String parseVariableModifiers(VariableModifiersContext ctx) {
         StringBuilder builder = new StringBuilder();
 
         if (ctx.accessModifier() != null) {
@@ -1318,11 +2193,18 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         return builder.toString();
     }
 
-    public static String convertType(String type) {
-        if (type.equals("bool"))
-            return "boolean";
-        else if (type.equals("string"))
-            return "String";
-        return type;
+    @Override
+    public String visitPrecompile(PrecompileContext ctx) {
+        return super.visitPrecompile(ctx);
+    }
+
+    @Override
+    public String visitLambdaExpr(LambdaExprContext ctx) {
+        return String.format("(%s) -> %s", ctx.idList().getText(), visit(ctx.expression()));
+    }
+
+    @Override
+    public String visitAnnotation(AnnotationContext ctx) {
+        return String.format("@%s", visit(ctx.expression()));
     }
 }
