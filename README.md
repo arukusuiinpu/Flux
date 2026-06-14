@@ -78,7 +78,7 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
     return 1 < 2 < 5 ? ternaryBool : False // The more classic alternative too
 }
 
-def main() { // Optional python-style block and function syntax (def is the same as void)
+def main(): // Optional python-style block and function syntax (def is the same as void)
     print(double1 *** double2); // Tetration, also can be done using ^^
 
     var test = SampleFunction(float1, float2)
@@ -96,7 +96,6 @@ def main() { // Optional python-style block and function syntax (def is the same
     string sampleString = f"{SampleString("random user")}\ntest"
 
     print(sampleString)
-}
 
 var varFunction1() { // Flux also allows loosely typed functions, it inherits the type from the return statement, ex. int
     return 1
