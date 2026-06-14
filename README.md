@@ -1,6 +1,6 @@
 # 𓆝𓆟𓆞Flux𓆟𓆞𓆝
-_Flexibility should always be an alternative! Flux is not an answer for your demands, but is a call for action._
-# 𓆝𓆟𓆞____𓆟𓆞𓆝
+<br />_Flexibility should always be an alternative!<br />Flux is not an answer for your demands,<br />but is a call for action._
+# 𓆝𓆟𓆞_____𓆟𓆞𓆝
 
 ## Mock plans:
 - More useful operators and aliases (Python, C#)
