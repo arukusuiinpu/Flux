@@ -68,6 +68,14 @@
       <artifactId>jaclin</artifactId>
       <version>4.0.2</version>
     </dependency>
+
+    <!-- Source: https://mvnrepository.com/artifact/one.util/streamex -->
+    <dependency>
+      <groupId>one.util</groupId>
+      <artifactId>streamex</artifactId>
+      <version>0.8.4</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <build>

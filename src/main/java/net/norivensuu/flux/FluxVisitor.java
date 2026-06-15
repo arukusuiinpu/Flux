@@ -578,6 +578,20 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLambdaExpr(FluxParser.LambdaExprContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code ApproximatelyExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitApproximatelyExpr(FluxParser.ApproximatelyExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code RangeExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRangeExpr(FluxParser.RangeExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code UnaryExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
@@ -661,6 +675,20 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitAddSubExpr(FluxParser.AddSubExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code RangeIdExpr}
+	 * labeled alternative in {@link FluxParser#rangeToken}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRangeIdExpr(FluxParser.RangeIdExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code RangeIntExpr}
+	 * labeled alternative in {@link FluxParser#rangeToken}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRangeIntExpr(FluxParser.RangeIntExprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#expressionList}.
 	 * @param ctx the parse tree

@@ -53,12 +53,18 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
     float c = float1 + float2; float d = 3.14 // Both ';' and '\n' serve as terminators
 
     float m1 = c ** d // Exponent operator
-    float m2 = c /% d // Floor Division operator (aka // in python)
-    float m3 = c %/ d // Ceil Division operator
+    float m2 = c /% d // Floor Division operator (aka // in python; /% points DOWN, meaning it's floor)
+    float m3 = c %/ d // Ceil Division operator (%/ points UP, meaning it's ceil)
+
+    m2 = c floor d // Can also be written verbosely
+    m3 = c ceil d // Also variable declaration is automatically lowered for these entries because they were already defined
 
     m1 **= 2
     m2 /%= 2 // These three work the same way as any regular operation assignments
     m3 %/= 2
+
+    modint1 = 5 % 2 // Division with remainder
+    modint2 = 5 mod 2 // Also allows verboseness
 
     List<List<string>> list1 = new ArrayList() {{ add(List.of("element1")); add(List.of("element2")); }} // Directly compiles in Java
     list2 = [1, 2, 3, 4, 5] // Borrows simpler list structure from python
@@ -79,18 +85,55 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 }
 
 def main(): // Optional python-style block and function syntax (def is the same as void)
-    print(double1 *** double2); // Tetration, also can be done using ^^
+    print(double1 *** double2); // Tetration
 
     var test = SampleFunction(float1, float2)
 
     def voidDef(float voidFloat1, voidFloat2: float) { // You can combine python and java/C# syntax
-
+        if (voidFloat1 ~~.5 voidFloat2): // Approximation operator, will return yes if two values are approximately equal to (.precision) digits after the decimal point
+            print("yay1")
+        if (voidFloat1 ~~5. voidFloat2): // Integer notation before the . signals higher order approximation (52 ~~1. 56 is true because 50 == 50)
+            print("yay2")
+        if (voidFloat1 ~~.-5 voidFloat2): // The negative sign at the other end signals reversion (13.3 ~~.1 17.6 == 13.3 ~~-1. 17.6)
+            print("yay3")
     }
 
     i = 0
 
     string SampleString(string name) { // Allows nested functions
-        return f"Hello, {name}! How are you today my little fella? The i is: {i}" // Fstrings
+        return f"Hello, {name}! How are you today my little fella? The i is: {i}" // Fstrings, also the scope for any variable like i is inferred via bottom-up, previously defined search
+        /*
+        A bit of clarity on scope:
+        {
+            i = 1
+            i = 2 <- selected
+
+            print(i) // Same scope, latest definition
+
+            i = 3
+        }
+        {
+            i = 1
+
+            void print_() {
+                i = 2 <- selected
+
+                print(i) // Local scope, up-closest neighbour first
+
+                i = 3
+            }
+        }
+        {
+            i = 1 <- selected
+
+            void print_() {
+                print(i) // Upper scope, up-closest neighbour first
+
+                i = 2
+                i = 3
+            }
+        }
+        */
     }
 
     string sampleString = f"{SampleString("random user")}\ntest"
@@ -153,13 +196,15 @@ exp1 = (float) 2 ** 3 ** 4 // Operations handled according to associativity from
         not(expression)
 
     Multiplication/Division -> Left to Right
-        expression * or / or % expression
+        expression * or / or % or mod expression
 
     Floor Division -> Left to Right
         expression /% expression
+        expression floor expression
 
     Ceil Division -> Left to Right
         expression %/ expression
+        expression ceil expression
 
     Addition/Subtraction -> Left to Right
         expression + or - expression
@@ -167,7 +212,11 @@ exp1 = (float) 2 ** 3 ** 4 // Operations handled according to associativity from
     Bit Shift operations -> Left to Right
         expression << or >> or >>> expression
 
-    Comparisons -> Left to Right
+    Approximation -> Left to Right
+        expression ~~ expression // Default precision is 1
+        expression ~~.int expression
+
+    Comparisons -> Left to Right unless Chained
         expression < or > or <= or >= expression
         expression instanceof expression
 

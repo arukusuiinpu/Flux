@@ -2,6 +2,7 @@ package net.norivensuu.flux.utils;
 
 import com.thoughtworks.qdox.JavaProjectBuilder;
 import net.norivensuu.flux.FluxParser;
+import one.util.streamex.StreamEx;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.File;
@@ -171,6 +172,14 @@ public class FluxUtils {
                         new KnownFunction("range",
                                 (s) -> s,
                                 (s) -> ctm.of("list", "int"),
+                                null,
+                                List.of(StandardFluxLibs.STATIC_FLUX_UTILS)
+                        ),
+                        new HashMap<>()));
+                put("approximately", new TypeTreeElement("approximately",
+                        new KnownFunction("approximately",
+                                (s) -> s,
+                                (s) -> ctm.of("bool"),
                                 null,
                                 List.of(StandardFluxLibs.STATIC_FLUX_UTILS)
                         ),
@@ -347,17 +356,17 @@ public class FluxUtils {
 
     public static String convertFluxType(String type) {
         var t = ctm.getFromFlux(type);
-        return t != null ? t.javaType : type;
+        return t != null ? t.getJavaType() : type;
     }
 
     public static String convertClassToJavaType(String type) {
         var t = ctm.getFromJavaClass(type);
-        return t != null ? t.javaType : type;
+        return t != null ? t.getJavaType() : type;
     }
 
     public static String convertFluxToClassType(String type) {
         var t = ctm.getFromFlux(type);
-        return t != null ? t.javaClassType : type;
+        return t != null ? t.getJavaClassType() : type;
     }
 
     public static class ComplexType {
@@ -368,13 +377,28 @@ public class FluxUtils {
         public int subtypesCapacity = 0;
 
         public String getFluxType() {
-            return String.format("%s%s", fluxType, !subtypes.isEmpty() ? String.format("<%s>", String.join(", ", subtypes.stream().map(ComplexType::getFluxType).toList())) : "");
+            if (!is("array")) {
+                return String.format("%s%s", fluxType, !subtypes.isEmpty() ? String.format("<%s>", String.join(", ", subtypes.stream().map(ComplexType::getFluxType).toList())) : "");
+            }
+            else {
+                return subtypes.getFirst().getJavaClassType() + "[]";
+            }
         }
         public String getJavaType() {
-            return String.format("%s%s", javaType, !subtypes.isEmpty() ? String.format("<%s>", String.join(", ", subtypes.stream().map(ComplexType::getJavaClassType).toList())) : "");
+            if (!is("array")) {
+                return String.format("%s%s", javaType, !subtypes.isEmpty() ? String.format("<%s>", String.join(", ", subtypes.stream().map(ComplexType::getJavaClassType).toList())) : "");
+            }
+            else {
+                return subtypes.getFirst().getJavaClassType() + "[]";
+            }
         }
         public String getJavaClassType() {
-            return String.format("%s%s", javaClassType, !subtypes.isEmpty() ? String.format("<%s>", String.join(", ", subtypes.stream().map(ComplexType::getJavaClassType).toList())) : "");
+            if (!is("array")) {
+                return String.format("%s%s", javaClassType, !subtypes.isEmpty() ? String.format("<%s>", String.join(", ", subtypes.stream().map(ComplexType::getJavaClassType).toList())) : "");
+            }
+            else {
+                return subtypes.getFirst().getJavaClassType() + "[]";
+            }
         }
 
         public ComplexType(ComplexType complexType, ComplexType... subtypes) {
@@ -514,6 +538,9 @@ public class FluxUtils {
 
                 return getFromAny(newKey, subList);
             }
+            else if (key.contains("[]")) {
+                return ctm.of("array", key.substring(0, key.indexOf("[")));
+            }
 
             for (var type : getSortedTypes()) {
                 if (Objects.equals(type.fluxType, key) || Objects.equals(type.javaType, key) || Objects.equals(type.javaClassType, key)) {
@@ -624,6 +651,13 @@ public class FluxUtils {
     @Kwargs("out") // Kwargs must declare method parameters names
     public static <T> void print(T... out) {
         Print(out, "\n");
+    }
+
+    public static boolean approximately(double leftValue, double rightValue) {
+        return approximately(1, leftValue, rightValue);
+    }
+    public static boolean approximately(int precision, double... values) {
+        return StreamEx.of(Arrays.spliterator(values)).pairMap((a, b) -> Math.abs(a - b) < Math.pow(10, -precision)).allMatch((s) -> s == true);
     }
 
     // TODO: IMPLEMENT ANY() LOL

@@ -74,7 +74,7 @@ variableModifiers
     ;
 
 localVarDecl
-    :   VAR? packedId '=' expression                                 # LooselyTypedLocalVar
+    :   var=VAR? packedId '=' expression                             # LooselyTypedLocalVar
     |   type packedId ('=' expression)?                              # StrictlyTypedLocalVar
     ;
 
@@ -173,16 +173,16 @@ statement
     ;
 
 assignmentStat
-    :   qualifiedId operator=
+    :   as=expression operator=
     ( '='   | '+='  | '-='  | '*='
     | '/='  | '%='  | '&='  | '^='
     | '|='  | '<<=' | '>>=' | '>>>='
-    ) expression                                                # DefaultAssigmnent
-    |   qualifiedId operator='**=' expression                   # ExpAssigmnent
-    |   qualifiedId operator='***=' expression                  # TetrAssigmnent
-    |   qualifiedId operator='/%=' expression                   # FloorDivAssigmnent
-    |   qualifiedId operator='%/=' expression                   # CeilDivAssigmnent
-    |   qualifiedId operator=('++' | '--')                      # UnaryAssigmnent
+    ) value=expression                                                # DefaultAssigmnent
+    |   as=expression operator='**=' value=expression                   # ExpAssigmnent
+    |   as=expression operator='***=' value=expression                  # TetrAssigmnent
+    |   as=expression operator='/%=' value=expression                   # FloorDivAssigmnent
+    |   as=expression operator='%/=' value=expression                   # CeilDivAssigmnent
+    |   as=expression operator=('++' | '--')                      # UnaryAssigmnent
     ;
 
 generator_for
@@ -205,10 +205,12 @@ expression
     : <assoc=right>  expression '***' expression                # TetrExpr
     | <assoc=right>  expression '**' expression                 # ExpExpr
     |   collection=expression '[' element=expression ']'        # ArrayAccessExpr
-    |   acc=expression '.' variable=expression                  # VariableAccessExpr
     | <assoc=right>  'lambda' (idList) ':' expression                        # LambdaExpr
     | <assoc=right>  '(' (idList) ')' ('->' | '=>') expression               # LambdaExpr
     | <assoc=right>  qualifiedId operator=':=' expression                    # WalrusExpr // TODO: Implement WalrusExpr
+    |   expression (minus='-'? neg_precision=expression '.')? operator='~~' expression # ApproximatelyExpr
+    |   expression operator='~~' ('.' minus='-'? precision=expression)? expression # ApproximatelyExpr
+    |   acc=expression '.' variable=expression                  # VariableAccessExpr
     |   '(' type ')' expression                                 # CastExpr
     |   '(' expression ')'                                      # ParenthesizedExpr
     |   '[[' expressionList? ']]'                               # ArrayExpr // TODO: Implement ArrayExpr
@@ -217,6 +219,7 @@ expression
     |   '(' expressionList? ')'                                 # TupleExpr // TODO: Implement TupleExpr
     |   FIGURE_BRACKET_L expressionDict? FIGURE_BRACKET_R       # DictExpr // TODO: Implement DictExpr
     |   expression operator=('++' | '--')                       # PostfixExpr
+    |   first=rangeToken? '..' second=rangeToken ('..' third=rangeToken)?          # RangeExpr
     |   '[' blk=block
     generator_for* ('if' filter=expression )? ']' # GeneratorExpr // TODO: Make generators lazy
     |   '[' item=expression
@@ -224,12 +227,12 @@ expression
 
     |   ('!' expression | 'not' '(' expression ')')             # NotExpr
     |   operator=('++' | '--' | '+' | '-' | '~') expression     # UnaryExpr
-    |   expression operator=('*' | '/' | '%') expression        # MulDivExpr
-    |   expression operator='/%' expression                     # FloorDivExpr
-    |   expression operator='%/' expression                     # CeilDivExpr
+    |   expression operator=('*' | '/' | '%' | 'mod') expression # MulDivExpr
+    |   expression operator=('/%' | 'floor') expression         # FloorDivExpr
+    |   expression operator=('%/' | 'ceil') expression          # CeilDivExpr
     |   expression operator=('+' | '-') expression              # AddSubExpr
-    |   expression operator=('<<' | '>>' | '>>>')? expression   # ShiftExpr
-    |   expression operator=('<' | '>' | '<=' | '>=')? expression # RelationalExpr
+    |   expression operator=('<<' | '>>' | '>>>') expression   # ShiftExpr
+    |   expression operator=('<' | '>' | '<=' | '>=') expression # RelationalExpr
     |   expression operator='instanceof' expression             # RelationalExpr
     |   expression operator=('==' | '!=') expression            # EqualityExpr
     |   expression '&' expression                               # BitwiseANDExpr
@@ -253,6 +256,8 @@ expression
     |   CHAR                                                    # CharExpr
     |   NULL                                                    # NullExpr
     ;
+
+rangeToken : qualifiedId # RangeIdExpr | INT # RangeIntExpr ;
 
 expressionList : expression (',' expression)* ;
 expressionDict : dictElement (',' dictElement)* ;

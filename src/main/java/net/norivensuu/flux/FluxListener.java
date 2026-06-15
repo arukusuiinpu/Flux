@@ -970,6 +970,30 @@ public interface FluxListener extends ParseTreeListener {
 	 */
 	void exitLambdaExpr(FluxParser.LambdaExprContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code ApproximatelyExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterApproximatelyExpr(FluxParser.ApproximatelyExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ApproximatelyExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitApproximatelyExpr(FluxParser.ApproximatelyExprContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code RangeExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterRangeExpr(FluxParser.RangeExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code RangeExpr}
+	 * labeled alternative in {@link FluxParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitRangeExpr(FluxParser.RangeExprContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code UnaryExpr}
 	 * labeled alternative in {@link FluxParser#expression}.
 	 * @param ctx the parse tree
@@ -1113,6 +1137,30 @@ public interface FluxListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitAddSubExpr(FluxParser.AddSubExprContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code RangeIdExpr}
+	 * labeled alternative in {@link FluxParser#rangeToken}.
+	 * @param ctx the parse tree
+	 */
+	void enterRangeIdExpr(FluxParser.RangeIdExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code RangeIdExpr}
+	 * labeled alternative in {@link FluxParser#rangeToken}.
+	 * @param ctx the parse tree
+	 */
+	void exitRangeIdExpr(FluxParser.RangeIdExprContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code RangeIntExpr}
+	 * labeled alternative in {@link FluxParser#rangeToken}.
+	 * @param ctx the parse tree
+	 */
+	void enterRangeIntExpr(FluxParser.RangeIntExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code RangeIntExpr}
+	 * labeled alternative in {@link FluxParser#rangeToken}.
+	 * @param ctx the parse tree
+	 */
+	void exitRangeIntExpr(FluxParser.RangeIntExprContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FluxParser#expressionList}.
 	 * @param ctx the parse tree

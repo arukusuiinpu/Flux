@@ -215,7 +215,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             private List<ParseTree> traverse(ParseTree ctx, int depth) {
                 if (ctx != null) {
                     for (int i = 0; i < ctx.getChildCount(); i++) {
-                        traverse(ctx.getChild(i), depth+1);
+                        traverse(ctx.getChild(ctx.getChildCount()-i-1), depth+1);
                     }
                 }
 
@@ -266,7 +266,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
             var localType = simplifyLocalVarType(ctx.varDecl().localVarDecl());
 
-            return new Declaration(localType.type, localType.id, globalDecl, ctm.of("var"));
+            return new Declaration(localType.type, localType.id, globalDecl.localVarDecl(), ctm.of("var"));
         } else if (ctx.functionDecl() != null) {
             return simplifyDeclaration(ctx.functionDecl());
         } else if (ctx.importDecl() != null) {
@@ -285,7 +285,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     public Declaration simplifyDeclaration(VarDeclContext ctx) {
         var localType = simplifyLocalVarType(ctx.localVarDecl());
 
-        return new Declaration(localType.type, localType.id, ctx, ctm.of("var"));
+        return new Declaration(localType.type, localType.id, ctx.localVarDecl(), ctm.of("var"));
     }
 
     public Declaration simplifyDeclaration(FunctionDeclContext ctx) {
@@ -452,7 +452,12 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     public String visitType(TypeContext ctx) {
         StringBuilder builder = new StringBuilder();
         if (!ctx.type().isEmpty()) {
-            builder.append(convertFluxType(visit(ctx.type(0)))).append("<").append(convertFluxType(visit(ctx.type(1)))).append(">");
+            if (ctx.getText().contains("[]")) {
+                builder.append(convertFluxType(visit(ctx.type(0)))).append("[]");
+            }
+            else {
+                builder.append(convertFluxType(visit(ctx.type(0)))).append("<").append(convertFluxType(visit(ctx.type(1)))).append(">");
+            }
         } else {
             if (ctx.ID() != null) {
                 return convertFluxType(visit(ctx.ID()));
@@ -632,6 +637,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         }
     }
 
+    private List<GeneratorExprContext> generatorExprContexts = new ArrayList<>();
     @Override
     public String visitGeneratorExpr(GeneratorExprContext ctx) {
         ensureGeneratorDeclarations(ctx);
@@ -646,30 +652,44 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
             uniqueId = String.format("_generator_%s_%s", gs, ctx.hashCode());
 
-            pendingAssertions.add(-1, String.format("List<%s> %s = new ArrayList<>();", listType.getJavaClassType(), uniqueId));
+            if (!generatorExprContexts.contains(ctx))
+                pendingAssertions.add(-1, String.format("List<%s> %s = new ArrayList<>();", listType.getJavaClassType(), uniqueId));
 
         }
 
-        pendingAssertions.add(-1, "{");
-        int n = 0;
-        for (var generator : ctx.generator_for()) {
-            pendingAssertions.add(-1, String.format("for (var %s : %s) {", generator.iterId.getText(), visit(generator.collection)));
-            n++;
-        }
+        if (!generatorExprContexts.contains(ctx)) {
+            pendingAssertions.add(-1, "{");
+            int n = 0;
+            for (var generator : ctx.generator_for()) {
+                pendingAssertions.add(-1, String.format("for (var %s : %s) {", generator.iterId.getText(), visit(generator.collection)));
+                n++;
+            }
 
-        if (item != null) {
-            pendingAssertions.add(-1, String.format("%s.add(%s);", uniqueId, visit(item)));
-        }
-        else {
-            pendingAssertions.add(-1, String.format("%s", visit(ctx.blk)));
-        }
+            if (item != null) {
+                pendingAssertions.add(-1, String.format("%s.add(%s);", uniqueId, visit(item)));
+            } else {
+                pendingAssertions.add(-1, String.format("%s", visit(ctx.blk)));
+            }
 
-        for (int i = 0; i < n; i++) {
+            for (int i = 0; i < n; i++) {
+                pendingAssertions.add(-1, "}");
+            }
             pendingAssertions.add(-1, "}");
+
+            generatorExprContexts.add(ctx);
         }
-        pendingAssertions.add(-1, "}");
 
         return uniqueId;
+    }
+
+    @Override
+    public String visitRangeExpr(RangeExprContext ctx) { //TODO: Finish
+        ensureImport(getProgram(ctx), StandardFluxLibs.STATIC_FLUX_UTILS);
+
+        if (ctx.rangeToken().size() == 1) {
+            return String.format("range(%s)", ctx.rangeToken(0));
+        }
+        return "";
     }
 
     @Override
@@ -681,7 +701,15 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     public String visitArrayAccessExpr(ArrayAccessExprContext ctx) {
         var element = visit(ctx.element);
 
-        return String.format("%s.%s", visit(ctx.collection), element.equals("0") ? "getFirst()" : String.format("get(%s)", element));
+        var declaration = getDeclaration(visit(ctx.collection), ctx);
+
+        var getter = element.equals("0") ? ".getFirst()" : String.format(".get(%s)", element);
+
+        if (declaration != null && declaration.type.is("array")) {
+            getter = String.format("[%s]", element);
+        }
+
+        return String.format("%s%s", visit(ctx.collection), getter);
     }
 
     @Override
@@ -738,7 +766,11 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitMulDivExpr(MulDivExprContext ctx) {
-        return String.format("%s %s %s", visit(ctx.expression(0)), ctx.operator.getText(), visit(ctx.expression(1)));
+        String operator = ctx.operator.getText();
+
+        if (operator.equals("mod")) operator = "%";
+
+        return String.format("%s %s %s", visit(ctx.expression(0)), operator, visit(ctx.expression(1)));
     }
 
     @Override
@@ -748,30 +780,49 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitRelationalExpr(RelationalExprContext ctx) {
-        var parent = ctx.getParent();
-        String leftExpr = visit(ctx.expression(0));
-        String rightExpression = visit(ctx.expression(1));
-        String operator = ctx.operator.getText();
+        return visitRelation(ctx, ctx.expression(0), ctx.expression(1), ctx.operator.getText());
+    }
 
-        var program = getProgram(ctx);
+    @Override
+    public String visitApproximatelyExpr(ApproximatelyExprContext ctx) {
+        ensureImport(getProgram(ctx), StandardFluxLibs.STATIC_FLUX_UTILS);
+
+        var precision = "";
+        var minus = "";
+        if (ctx.precision != null) {
+            precision = visit(ctx.precision) + ", ";
+            minus = ctx.minus != null ? "-" : "";
+        }
+        else if (ctx.neg_precision != null) {
+            precision = visit(ctx.neg_precision) + ", ";
+            minus = ctx.minus == null ? "-" : "";
+        }
+
+        return String.format("approximately(%s%s%s, %s)", minus, precision, visit(ctx.expression(0)), visit(ctx.expression(1)));
+    }
+
+    public String visitRelation(ParseTree ctx, ParseTree leftExpr, ParseTree rightExpr, String operator) {
+        var parent = ctx.getParent();
+        String left = visit(leftExpr);
+        String right = visit(rightExpr);
 
         if (parent instanceof RelationalExprContext) {
-            if (ctx.expression(1) instanceof FunctionCallExprContext idExpr) {
+            if (rightExpr instanceof FunctionCallExprContext idExpr) {
                 var declaration = getDeclaration(idExpr.ID().getText(), ctx);
 
                 if (declaration != null) {
                     String varName = "_" + declaration.id + "$" + ctx.hashCode();
                     String typePrefix = (getDeclaration(varName, ctx) == null) ? declaration.type.getJavaType() + " " : "";
 
-                    pendingAssertions.add(String.format("%s%s = %s;", typePrefix, varName, rightExpression));
+                    pendingAssertions.add(String.format("%s%s = %s;", typePrefix, varName, right));
 
-                    return String.format("%s %s %s && %s", leftExpr, operator, varName, varName);
+                    return String.format("%s %s %s && %s", left, operator, varName, varName);
                 }
             }
-            return String.format("%s %s %s && %s", leftExpr, operator, rightExpression, rightExpression);
+            return String.format("%s %s %s && %s", left, operator, right, right);
         }
 
-        return String.format("%s %s %s", leftExpr, operator, rightExpression);
+        return String.format("%s %s %s", left, operator, right);
     }
 
     @SafeVarargs
@@ -844,7 +895,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         if (assignmentStat != null) {
             var assignment = getAssignment(assignmentStat);
 
-            var declaration = getDeclaration(assignment.qualifiedId.getText(), ctx);
+            var declaration = getDeclaration(visit(assignment.expressionContext), ctx);
             if (declaration != null) {
                 type = declaration.type;
             }
@@ -1109,6 +1160,8 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public String visitFloorDiv(Object exp1, Object exp2, ParseTree ctx) {
+        ensureImport(getProgram(ctx), StandardFluxLibs.STATIC_MATH_UTILS);
+
         return visitBinaryOp(exp1, exp2, ctx,
                 (e1, e2) -> String.format("Math.floor(%s / %s)", e1, e2));
     }
@@ -1119,6 +1172,8 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public String visitCeilDiv(Object exp1, Object exp2, ParseTree ctx) {
+        ensureImport(getProgram(ctx), StandardFluxLibs.STATIC_MATH_UTILS);
+
         return visitBinaryOp(exp1, exp2, ctx,
                 (e1, e2) -> String.format("Math.ceil(%s / %s)", e1, e2));
     }
@@ -1249,6 +1304,8 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             }
         } else if (object instanceof BoolExprContext expr) {
             type = ctm.of("boolean");
+        } else if (object instanceof FStringExprContext expr) {
+            type = ctm.of("String");
         } else if (object instanceof StringExprContext expr) {
             type = ctm.of("String");
         } else if (object instanceof ParenthesizedExprContext expr) {
@@ -1307,6 +1364,34 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
             else if (!typeLeft.equals(typeRight)) {
                 if (program.javaCode.checkPass())
                     throw new UnsupportedOperationException("Cannot tetrate values of two different types");
+            }
+            else {
+                type = typeLeft;
+            }
+        } else if (object instanceof CeilDivExprContext expr) {
+            var typeLeft = getAutoType(expr.expression(0));
+            var typeRight = getAutoType(expr.expression(1));
+
+            if (canAutoPromote(typeLeft, typeRight)) {
+                type = autoPromote(typeLeft, typeRight);
+            }
+            else if (!typeLeft.equals(typeRight)) {
+                if (program.javaCode.checkPass())
+                    throw new UnsupportedOperationException("Cannot use ceil on values of two different types");
+            }
+            else {
+                type = typeLeft;
+            }
+        } else if (object instanceof FloorDivExprContext expr) {
+            var typeLeft = getAutoType(expr.expression(0));
+            var typeRight = getAutoType(expr.expression(1));
+
+            if (canAutoPromote(typeLeft, typeRight)) {
+                type = autoPromote(typeLeft, typeRight);
+            }
+            else if (!typeLeft.equals(typeRight)) {
+                if (program.javaCode.checkPass())
+                    throw new UnsupportedOperationException("Cannot use floor on values of two different types");
             }
             else {
                 type = typeLeft;
@@ -1874,7 +1959,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     @Override
     public String visitUnaryAssigmnent(UnaryAssigmnentContext ctx) {
-        return String.format("%s%s", ctx.qualifiedId().getText(), ctx.operator.getText());
+        return String.format("%s%s", visit(ctx.as), ctx.operator.getText());
     }
 
     @Override
@@ -1917,17 +2002,17 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         if (assignment != null) {
             if (assignment.assignmentType.equals("default")) {
-                String idString = assignment.qualifiedId.getText();
+                String idString = visit(assignment.expressionContext);
 
                 return String.format("%s %s %s;", idString, assignment.operator, visit(assignment.expression));
             } else if (assignment.assignmentType.equals("exp")) {
-                String idString = assignment.qualifiedId.getText();
+                String idString = visit(assignment.expressionContext);
 
-                return String.format("%s = %s;", idString, visitExp(assignment.qualifiedId, assignment.expression, ctx));
+                return String.format("%s = %s;", idString, visitExp(assignment.expressionContext, assignment.expression, ctx));
             } else if (assignment.assignmentType.equals("floorDiv")) {
-                String idString = assignment.qualifiedId.getText();
+                String idString = visit(assignment.expressionContext);
 
-                return String.format("%s = %s;", idString, visitExp(assignment.qualifiedId, assignment.expression, ctx));
+                return String.format("%s = %s;", idString, visitExp(assignment.expressionContext, assignment.expression, ctx));
             }
         }
         return "";
@@ -1935,13 +2020,13 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
     public Assignment getAssignment(AssignmentStatContext ctx) {
         if (ctx instanceof DefaultAssigmnentContext assignment) {
-            return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "default");
+            return new Assignment(assignment.as, assignment.value, assignment.operator, "default");
         } else if (ctx instanceof ExpAssigmnentContext assignment) {
-            return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "exp");
+            return new Assignment(assignment.as, assignment.value, assignment.operator, "exp");
         } else if (ctx instanceof FloorDivAssigmnentContext assignment) {
-            return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "floorDiv");
+            return new Assignment(assignment.as, assignment.value, assignment.operator, "floorDiv");
         } else if (ctx instanceof CeilDivAssigmnentContext assignment) {
-            return new Assignment(assignment.qualifiedId(), assignment.expression(), assignment.operator, "ceilDiv");
+            return new Assignment(assignment.as, assignment.value, assignment.operator, "ceilDiv");
         }
         return null;
     }
@@ -1951,14 +2036,14 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     }
 
     public class Assignment {
-        public QualifiedIdContext qualifiedId;
+        public ExpressionContext expressionContext;
         public String assignmentType;
 
         public ExpressionContext expression;
         public String operator;
 
-        public Assignment(QualifiedIdContext qualifiedId, ExpressionContext expression, Token operator, String assignmentType) {
-            this.qualifiedId = qualifiedId;
+        public Assignment(ExpressionContext expressionContext, ExpressionContext expression, Token operator, String assignmentType) {
+            this.expressionContext = expressionContext;
             this.assignmentType = assignmentType;
             this.expression = expression;
             this.operator = operator.getText();
@@ -1973,23 +2058,22 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
     @Override
     public String visitVarDecl(VarDeclContext ctx) {
         String variableModifiers = parseVariableModifiers(ctx.variableModifiers());
-        return visitVar(ctx.localVarDecl(), variableModifiers, true) + ";\n";
+        return visitVar(ctx.localVarDecl(), variableModifiers, ctx) + ";\n";
     }
 
     @Override
     public String visitLooselyTypedLocalVar(LooselyTypedLocalVarContext ctx) {
-        return visitVar(ctx, "", false);
+        return visitVar(ctx, "", ctx);
     }
 
     @Override
     public String visitStrictlyTypedLocalVar(StrictlyTypedLocalVarContext ctx) {
-        return visitVar(ctx, "", false);
+        return visitVar(ctx, "", ctx);
     }
 
-    public String visitVar(LocalVarDeclContext ctx, String variableModifiers, boolean globalDecl) {
+    private List<AbstractMap.SimpleEntry<ParseTree, String>> varList = new ArrayList<>();
+    public String visitVar(LocalVarDeclContext ctx, String variableModifiers, ParseTree declCtx) {
         var localType = simplifyLocalVarType(ctx);
-
-        var program = getProgram(ctx);
 
         ComplexType type = localType.type;
         String Id = localType.id;
@@ -2002,11 +2086,16 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
 
         StringBuilder statementBuilder = new StringBuilder();
 
+        boolean declaresType;
         ExpressionContext expression = null;
         if (ctx instanceof StrictlyTypedLocalVarContext localCtx) {
             expression = localCtx.expression();
+            declaresType = true;
         } else if (ctx instanceof LooselyTypedLocalVarContext localCtx) {
             expression = localCtx.expression();
+            declaresType = localCtx.var != null;
+        } else {
+            declaresType = false;
         }
 
         String splitListName = String.format("_%s_%s", String.join("", idList), expression != null ? expression.hashCode() : "");
@@ -2018,13 +2107,21 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         for (int i = 0; i < idList.size(); i++) {
             var id = idList.get(i);
 
-            getProgram(ctx).javaCode.HashDeclaration(ctx, type, id);
+            var declaration = getDeclaration(id, ctx);
+
+            String javaType = type.getJavaType() + " ";
+            if (varList.stream().anyMatch((s) -> s.getValue().equals(id) && (s.getKey().equals(declaration.scope) || !declaresType))) {
+                javaType = "";
+            }
+            else {
+                varList.add(new AbstractMap.SimpleEntry<>(declaration.scope, id));
+            }
 
             if (expression != null) {
 
                 String expressionValue = idList.size() > 1 ? splitListName : visit(expression);
 
-                if (globalDecl && type.is("var")) {
+                if (type.is("var")) {
                     type = getAutoType(expression);
                 }
                 if (type.is("unknown")) {
@@ -2036,7 +2133,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                 }
                 pendingAssertions.clear();
 
-                statementBuilder.append(String.format("%s%s %s = %s", variableModifiers, type.getJavaType(), id, expressionValue));
+                statementBuilder.append(String.format("%s%s%s = %s", variableModifiers, javaType, id, expressionValue));
 
             } else {
                 for (var assertion : pendingAssertions) {
@@ -2044,7 +2141,7 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
                 }
                 pendingAssertions.clear();
 
-                statementBuilder.append(String.format("%s%s %s", variableModifiers, type.getJavaType(), id));
+                statementBuilder.append(String.format("%s%s%s", variableModifiers, javaType, id));
             }
 
             if (idList.size() > 1) {
