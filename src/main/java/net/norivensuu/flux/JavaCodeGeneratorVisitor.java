@@ -454,8 +454,8 @@ public class JavaCodeGeneratorVisitor extends FluxBaseVisitor<String> {
         if (!ctx.type().isEmpty()) {
             builder.append(convertFluxType(visit(ctx.type(0)))).append("<").append(convertFluxType(visit(ctx.type(1)))).append(">");
         } else {
-            if (ctx.qualifiedId() != null) {
-                return convertFluxType(visit(ctx.qualifiedId()));
+            if (ctx.ID() != null) {
+                return convertFluxType(visit(ctx.ID()));
             }
 
             return convertFluxType(ctx.getText());

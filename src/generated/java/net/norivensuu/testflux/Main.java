@@ -47,10 +47,10 @@ float m3 = (float) Math.ceil(c / d);
 m1 = (float) power(m1, 2);
 m2 = (float) power(m2, 2);
 
-List<String> list1 = new ArrayList<>() {
+List<List> list1 = new ArrayList<>() {
 {
-add("element1");
-add("element2");
+add(List.of("element1"));
+add(List.of("element2"));
 }
 };
 
@@ -77,22 +77,22 @@ void main() {
 print((double) estimateTetration(double1, double2));
 boolean test = SampleFunction(float1, float2);
 
-class _Class_voidDef$1251502504 {
+class _Class_voidDef$936368668 {
 
 void voidDef(float voidFloat1, float voidFloat2) {
 }
 }
-var _class_voidDef$1251502504 = new _Class_voidDef$1251502504();
+var _class_voidDef$936368668 = new _Class_voidDef$936368668();
 int i = 0;
 
-class _Class_SampleString$757386713 {
+class _Class_SampleString$1607566361 {
 
 String SampleString(String name) {
 return String.format("Hello, %s! How are you today my little fella? The i is: %s", name, i);
 }
 }
-var _class_SampleString$757386713 = new _Class_SampleString$757386713();
-String sampleString = String.format("%s\ntest", _class_SampleString$757386713.SampleString("random user"));
+var _class_SampleString$1607566361 = new _Class_SampleString$1607566361();
+String sampleString = String.format("%s\ntest", _class_SampleString$1607566361.SampleString("random user"));
 
 print(sampleString);
 }
@@ -104,12 +104,12 @@ return 1;
 double varFunction2() {
 if ((bool1)) {
 
-List<Double> _generator_i_2068126708 = new ArrayList<>();
+List<Double> _generator_i_2008781167 = new ArrayList<>();
 {
 for (var i : range(1000)) {
-_generator_i_2068126708.add(1.0);
+_generator_i_2008781167.add(1.0);
 }
-}return _generator_i_2068126708.getFirst();
+}return _generator_i_2008781167.getFirst();
 }else {
 {
 {
@@ -126,14 +126,14 @@ return 1.0 + 1;
 void unfinishedVoid() {
 float illegalFloat;
 
-class _Class_unpolishedVoid$222947526 {
+class _Class_unpolishedVoid$1498944673 {
 
 void unpolishedVoid() {
 print(estimateTetration(5, 5));
 }
 }
-var _class_unpolishedVoid$222947526 = new _Class_unpolishedVoid$222947526();
-class _Class_suboptimalVoid$532068603 {
+var _class_unpolishedVoid$1498944673 = new _Class_unpolishedVoid$1498944673();
+class _Class_suboptimalVoid$764490006 {
 
 void suboptimalVoid() {
 for (var i : range(1000000)) {
@@ -143,20 +143,20 @@ print(i);
 }
 }
 }
-var _class_suboptimalVoid$532068603 = new _Class_suboptimalVoid$532068603();
-class _Class_uglyVoid$1729992636 {
+var _class_suboptimalVoid$764490006 = new _Class_suboptimalVoid$764490006();
+class _Class_uglyVoid$1549565124 {
 
 void uglyVoid() {
-List<Integer> _generator_x_336647749 = new ArrayList<>();
+List<Integer> _generator_x_828070163 = new ArrayList<>();
 {
 for (var x : range(100)) {
-_generator_x_336647749.add(x);
+_generator_x_828070163.add(x);
 }
 }
-_generator_x_336647749.getFirst();
+_generator_x_828070163.getFirst();
 }
 }
-var _class_uglyVoid$1729992636 = new _Class_uglyVoid$1729992636();
+var _class_uglyVoid$1549565124 = new _Class_uglyVoid$1549565124();
 }
 float exp1 = (float)power(2, power(3, 4));
 

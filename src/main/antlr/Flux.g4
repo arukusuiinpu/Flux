@@ -30,8 +30,20 @@ declaration
     |   INDENT? varDecl terminator? DEDENT?
     ;
 
-className: className '<' className? '>' | qualifiedId ;
-type:   type '[]' ('[]')* | type '<' type? '>' | VAR | qualifiedId ;
+className
+    : <assoc=right> className '<' className? '>'
+    | qualifiedId
+    ;
+
+type
+    : <assoc=right> type '<' type? (',' type)* '>'
+    | <assoc=right> type '<' type '<' type? (',' type)* '>>'
+    | <assoc=right> type '<' type '<' type '<' type? (',' type)* '>>>'
+    | <assoc=right> type '<' type '<' type '<' type '<' type? (',' type)* '>>>>'
+    | type '[]' ('[]')*
+    | VAR
+    | ID
+    ;
 
 terminator : TERMINATOR+ ;
 
@@ -216,8 +228,8 @@ expression
     |   expression operator='/%' expression                     # FloorDivExpr
     |   expression operator='%/' expression                     # CeilDivExpr
     |   expression operator=('+' | '-') expression              # AddSubExpr
-    |   expression operator=('<<' | '>>' | '>>>') expression    # ShiftExpr
-    |   expression operator=('<' | '>' | '<=' | '>=') expression # RelationalExpr
+    |   expression operator=('<<' | '>>' | '>>>')? expression   # ShiftExpr
+    |   expression operator=('<' | '>' | '<=' | '>=')? expression # RelationalExpr
     |   expression operator='instanceof' expression             # RelationalExpr
     |   expression operator=('==' | '!=') expression            # EqualityExpr
     |   expression '&' expression                               # BitwiseANDExpr
