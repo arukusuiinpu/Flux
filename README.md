@@ -79,7 +79,7 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
 }
 
 def main(): // Optional python-style block and function syntax (def is the same as void)
-    print(double1 *** double2); // Tetration, also can be done using ^^
+    print(double1 *** double2); // Tetration
 
     var test = SampleFunction(float1, float2)
 
