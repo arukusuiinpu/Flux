@@ -92,16 +92,20 @@ def main(): // Optional python-style block and function syntax (def is the same 
     def voidDef(float voidFloat1, voidFloat2: float) { // You can combine python and java/C# syntax
         if (voidFloat1 ~~.5 voidFloat2): // Approximation operator, will return yes if two values are approximately equal to (.precision) digits after the decimal point
             print("yay1")
-        if (voidFloat1 ~~5. voidFloat2): // Integer notation before the . signals higher order approximation (52 ~~1. 56 is true because 50 == 50)
+        if (voidFloat1 5.~~ voidFloat2): // Integer notation before the . signals higher order approximation (52 1.~~ 56 is true because 50 == 50)
             print("yay2")
-        if (voidFloat1 ~~.-5 voidFloat2): // The negative sign at the other end signals reversion (13.3 ~~.1 17.6 == 13.3 ~~-1. 17.6)
+        if (voidFloat1 ~~.-5 voidFloat2): // The negative sign at the other end signals reversion (13.3 ~~.1 17.6 == 13.3 -1.~~ 17.6)
             print("yay3")
     }
 
-    i = 0
+    final int[] i = (Integer[]) [0].toArray()
 
     string SampleString(string name) { // Allows nested functions
-        return f"Hello, {name}! How are you today my little fella? The i is: {i}" // Fstrings, also the scope for any variable like i is inferred via bottom-up, previously defined search
+        s = f"Hello, {name}! How are you today my little fella? The i is: {i[0]}" // Fstrings, also the scope for any variable like i is inferred via bottom-up, previously defined search
+
+        i[0] = 1
+
+        return s
         /*
         A bit of clarity on scope:
         {
@@ -178,15 +182,20 @@ exp1 = (float) 2 ** 3 ** 4 // Operations handled according to associativity from
     Array access -> Left to Right
         expression[expression]
 
-    Variable access -> Left to Right
-        expression.expression
-
     Lambda functions -> Right to Left
         lambda id...: expression
         (id...) -> or => expression
 
     Walrus operator -> Right to Left
         id := expression
+
+    Approximation -> Left to Right
+        expression ~~ expression // Default precision is 1
+        expression int.~~ expression
+        expression ~~.int expression
+
+    Variable access -> Left to Right
+        expression.expression
 
     Casting -> Left to Right
         (type) expression
@@ -211,10 +220,6 @@ exp1 = (float) 2 ** 3 ** 4 // Operations handled according to associativity from
 
     Bit Shift operations -> Left to Right
         expression << or >> or >>> expression
-
-    Approximation -> Left to Right
-        expression ~~ expression // Default precision is 1
-        expression ~~.int expression
 
     Comparisons -> Left to Right unless Chained
         expression < or > or <= or >= expression
