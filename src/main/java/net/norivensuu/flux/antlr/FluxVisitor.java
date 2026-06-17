@@ -1,5 +1,5 @@
 // Generated from C:/Users/AlexN/Projects/IdeaProjects/Flux/src/main/antlr/Flux.g4 by ANTLR 4.13.2
-package net.norivensuu.flux;
+package net.norivensuu.flux.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -23,11 +23,47 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPrecompile(FluxParser.PrecompileContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FluxParser#declaration}.
+	 * Visit a parse tree produced by the {@code ImportDecl}
+	 * labeled alternative in {@link FluxParser#declaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitDeclaration(FluxParser.DeclarationContext ctx);
+	T visitImportDecl(FluxParser.ImportDeclContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ClassDecl}
+	 * labeled alternative in {@link FluxParser#declaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitClassDecl(FluxParser.ClassDeclContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code RunnableFunctionDecl}
+	 * labeled alternative in {@link FluxParser#declaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code VarFunctionDecl}
+	 * labeled alternative in {@link FluxParser#declaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ConsumerFunctionDecl}
+	 * labeled alternative in {@link FluxParser#declaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code VarDecl}
+	 * labeled alternative in {@link FluxParser#declaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVarDecl(FluxParser.VarDeclContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#className}.
 	 * @param ctx the parse tree
@@ -107,12 +143,6 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStrictfpMd(FluxParser.StrictfpMdContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FluxParser#importDecl}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitImportDecl(FluxParser.ImportDeclContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link FluxParser#variableModifiers}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -133,50 +163,17 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStrictlyTypedLocalVar(FluxParser.StrictlyTypedLocalVarContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FluxParser#varDecl}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitVarDecl(FluxParser.VarDeclContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link FluxParser#functionModifiers}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitFunctionModifiers(FluxParser.FunctionModifiersContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FluxParser#classDecl}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitClassDecl(FluxParser.ClassDeclContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link FluxParser#annotation}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitAnnotation(FluxParser.AnnotationContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code RunnableFunctionDecl}
-	 * labeled alternative in {@link FluxParser#functionDecl}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitRunnableFunctionDecl(FluxParser.RunnableFunctionDeclContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code VarFunctionDecl}
-	 * labeled alternative in {@link FluxParser#functionDecl}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitVarFunctionDecl(FluxParser.VarFunctionDeclContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code ConsumerFunctionDecl}
-	 * labeled alternative in {@link FluxParser#functionDecl}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitConsumerFunctionDecl(FluxParser.ConsumerFunctionDeclContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FluxParser#formalParameters}.
 	 * @param ctx the parse tree
@@ -258,12 +255,12 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitVoidReturn(FluxParser.VoidReturnContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code FunctionDeclStatement}
+	 * Visit a parse tree produced by the {@code DeclStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFunctionDeclStatement(FluxParser.FunctionDeclStatementContext ctx);
+	T visitDeclStatement(FluxParser.DeclStatementContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code VoidBlockStatement}
 	 * labeled alternative in {@link FluxParser#statement}.
@@ -292,13 +289,6 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitIfStatement(FluxParser.IfStatementContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code VarDeclStatement}
-	 * labeled alternative in {@link FluxParser#statement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitVarDeclStatement(FluxParser.VarDeclStatementContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code AssignmentStatement}
 	 * labeled alternative in {@link FluxParser#statement}.

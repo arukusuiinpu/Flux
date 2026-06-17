@@ -59,18 +59,21 @@ private bool SampleFunction(float a, float b) { // Inherits modifiers from Java
     return 1 < 2 < 5 ? ternaryBool : False // The more classic alternative too
 }
 
-def main(): // Optional python-style block and function syntax (def is the same as void)
+def main() { // Optional python-style block and function syntax (def is the same as void)
     print(double1 *** double2); // Tetration
 
     var test = SampleFunction(float1, float2)
 
     def voidDef(float voidFloat1, voidFloat2: float) { // You can combine python and java/C# syntax
-        if (voidFloat1 ~~.5 voidFloat2): // Approximation operator, will return yes if two values are approximately equal to (.precision) digits after the decimal point
+        if (voidFloat1 ~~.5 voidFloat2) { // Approximation operator, will return yes if two values are approximately equal to (.precision) digits after the decimal point
             print("yay1")
-        if (voidFloat1 5.~~ voidFloat2): // Integer notation before the . signals higher order approximation (52 1.~~ 56 is true because 50 == 50)
+        }
+        if (voidFloat1 5.~~ voidFloat2) { // Integer notation before the . signals higher order approximation (52 1.~~ 56 is true because 50 == 50)
             print("yay2")
-        if (voidFloat1 ~~.-5 voidFloat2): // The negative sign at the other end signals reversion (13.3 ~~.1 17.6 == 13.3 -1.~~ 17.6)
+        }
+        if (voidFloat1 ~~.-5 voidFloat2) { // The negative sign at the other end signals reversion (13.3 ~~.1 17.6 == 13.3 -1.~~ 17.6)
             print("yay3")
+        }
     }
 
     final int[] i = (Integer[]) [0].toArray()
@@ -118,6 +121,7 @@ def main(): // Optional python-style block and function syntax (def is the same 
     string sampleString = f"{SampleString("random user")}\ntest"
 
     print(sampleString)
+}
 
 var varFunction1() { // Flux also allows loosely typed functions, it inherits the type from the return statement, ex. int
     return 1

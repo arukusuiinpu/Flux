@@ -24,10 +24,17 @@ program: declaration* precompile? (declaration | statement | terminator)* EOF ;
 precompile: 'precompile' classBlock ;
 
 declaration
-    :   INDENT? importDecl terminator? DEDENT?
-    |   INDENT? classDecl terminator? DEDENT?
-    |   INDENT? functionDecl terminator? DEDENT?
-    |   INDENT? varDecl terminator? DEDENT?
+    :   INDENT? ('import' | 'using') qualifiedId (wildcard=WILDCARD)? terminator? DEDENT?          # ImportDecl
+    |   INDENT? ('import' | 'using') static='static' qualifiedId (wildcard=WILDCARD)? DEDENT?      # ImportDecl
+    |   INDENT? annotation* functionModifiers
+                        classWord=('class' | 'interface' | '@interface') mainClass=className ((':' | 'extends') extendsClass=className)? ((':' | 'implements') implementsClass=className)? classBlock terminator? DEDENT?       # ClassDecl
+    |   INDENT? annotation* functionModifiers
+                        VOID ID '(' formalParameters? ')' terminator? voidBlock terminator? DEDENT?    # RunnableFunctionDecl
+    |   INDENT? annotation* functionModifiers
+                        VAR? ID '(' formalParameters? ')' terminator? returnBlock            terminator? DEDENT?    # VarFunctionDecl
+    |   INDENT? annotation* functionModifiers
+                        type ID '(' formalParameters? ')' terminator? returnBlock            terminator? DEDENT?    # ConsumerFunctionDecl
+    |   INDENT? variableModifiers localVarDecl terminator? DEDENT?         #VarDecl
     ;
 
 className
@@ -47,8 +54,6 @@ type
 
 terminator : TERMINATOR+ ;
 
-accessModifier : 'public' | 'protected' | 'private' ;
-unfinishedMd : 'unfinished' | 'illegal' | 'suboptimal' | 'unpolished' | 'ugly' ;
 implementationModifier : 'abstract' | 'static' | 'native' ;
 staticMd : 'static' ;
 finalMd : 'final' ;
@@ -58,15 +63,10 @@ synchronizedMd : 'synchronized' ;
 nativeMd : 'native' ;
 strictfpMd : 'strictfp' ;
 
-importDecl
-    :   ('import' | 'using') qualifiedId (wildcard=WILDCARD)?
-    |   ('import' | 'using') static='static' qualifiedId (wildcard=WILDCARD)?
-    ;
-
 variableModifiers
     :
-    accessModifier?
-    unfinishedMd?
+    accessModifier=('public' | 'protected' | 'private')?
+    unfinishedMd=('unfinished' | 'illegal' | 'suboptimal' | 'unpolished' | 'ugly')?
     staticMd?
     finalMd?
     transientMd?
@@ -76,10 +76,6 @@ variableModifiers
 localVarDecl
     :   var=VAR? packedId '=' expression                             # LooselyTypedLocalVar
     |   type packedId ('=' expression)?                              # StrictlyTypedLocalVar
-    ;
-
-varDecl
-    :   variableModifiers localVarDecl terminator?
     ;
 
 functionModifiers
@@ -95,22 +91,8 @@ functionModifiers
     strictfpMd?
     ;
 
-classDecl
-    :   annotation* functionModifiers
-        classWord=('class' | 'interface' | '@interface') mainClass=className ((':' | 'extends') extendsClass=className)? ((':' | 'implements') implementsClass=className)? classBlock
-    ;
-
 annotation
     : '@' expression ('(' expressionList ')')? terminator?
-    ;
-
-functionDecl
-    :   annotation* functionModifiers
-        VOID ID '(' formalParameters? ')' terminator? voidBlock             # RunnableFunctionDecl
-    |   annotation* functionModifiers
-        VAR? ID '(' formalParameters? ')' terminator? returnBlock           # VarFunctionDecl
-    |   annotation* functionModifiers
-        type ID '(' formalParameters? ')' terminator? returnBlock           # ConsumerFunctionDecl
     ;
 
 formalParameters
@@ -158,14 +140,13 @@ expressionReturn : 'return' expression terminator? ;
 voidReturn : 'return' terminator? ;
 
 statement
-    :   INDENT? functionDecl terminator?  DEDENT?                                          # FunctionDeclStatement
+    :   INDENT? declaration terminator?  DEDENT?                                           # DeclStatement
     |   INDENT? voidBlock terminator?  DEDENT?                                             # VoidBlockStatement
     |   INDENT? 'for' '(' localVarDecl terminator expression terminator assignmentStat ')'  DEDENT? block # ForStatement
     |   INDENT? 'for' localVarDecl terminator expression terminator assignmentStat  DEDENT? block # ForStatement
     |   INDENT? ('for' | 'foreach') '(' type? packedId (':' | 'in') expression ')'  DEDENT? block # ForeachStatement
     |   INDENT? ('for' | 'foreach') type? packedId (':' | 'in') expression  DEDENT? block # ForeachStatement
     |   INDENT? 'if' expression DEDENT? block terminator? (('else if' | 'elif') expression block)* terminator? ('else' else=block)? # IfStatement
-    |   INDENT? varDecl DEDENT?                                     # VarDeclStatement
     |   INDENT? assignmentStat terminator?  DEDENT?                              # AssignmentStatement
     |   INDENT? expression terminator?  DEDENT?                                  # ExpressionStatement
     |   INDENT? expressionReturn  DEDENT?                                       # ExpressionReturnStatement
@@ -228,12 +209,12 @@ expression
     |   ('!' expression | 'not' '(' expression ')')             # NotExpr
     |   operator=('++' | '--' | '+' | '-' | '~') expression     # UnaryExpr
     |   expression operator=('*' | '/' | '%' | 'mod') expression # MulDivExpr
-    |   expression operator=('/%' | 'floor') expression         # FloorDivExpr
-    |   expression operator=('%/' | 'ceil') expression          # CeilDivExpr
+    |   expression operator='/%' expression                     # FloorDivExpr
+    |   expression operator='%/' expression                     # CeilDivExpr
     |   expression operator=('+' | '-') expression              # AddSubExpr
-    |   expression operator=('<<' | '>>' | '>>>') expression   # ShiftExpr
+    |   expression operator=('<<' | '>>' | '>>>') expression    # ShiftExpr
     |   expression operator=('<' | '>' | '<=' | '>=') expression # RelationalExpr
-    |   expression operator='instanceof' expression             # RelationalExpr
+    |   expression operator=('instanceof' | 'is') expression    # RelationalExpr
     |   expression operator=('==' | '!=') expression            # EqualityExpr
     |   expression '&' expression                               # BitwiseANDExpr
     |   expression '^' expression                               # BitwiseXORExpr

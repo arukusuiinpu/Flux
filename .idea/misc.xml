@@ -9,7 +9,7 @@
           <option name="outputDir" value="\src\main\java" />
           <option name="libDir" value="\src\main\flux" />
           <option name="encoding" value="" />
-          <option name="pkg" value="net.norivensuu.flux" />
+          <option name="pkg" value="net.norivensuu.flux.antlr" />
           <option name="language" value="Java" />
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>

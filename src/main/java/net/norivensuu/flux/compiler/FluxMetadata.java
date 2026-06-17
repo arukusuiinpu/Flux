@@ -1,4 +1,4 @@
-package net.norivensuu.flux;
+package net.norivensuu.flux.compiler;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

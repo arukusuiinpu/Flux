@@ -1,25 +1,18 @@
-package net.norivensuu.flux;
+package net.norivensuu.flux.compiler;
 
 import com.github.bogdanovmn.jaclin.CLI;
-import com.sun.tools.javac.Main;
+import net.norivensuu.flux.visitor.IrGeneratorVisitor;
+import net.norivensuu.flux.antlr.FluxLexer;
+import net.norivensuu.flux.antlr.FluxParser;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNodeImpl;
-import org.apache.commons.cli.*;
 
-import javax.tools.*;
 import java.io.*;
-import java.lang.instrument.Instrumentation;
-import java.lang.reflect.Field;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -37,7 +30,7 @@ public class FluxCompiler {
         public Path fileName;
         public Set<String> imports = new HashSet<>();
         public FluxParser.ProgramContext ctx;
-        public JavaCodeGeneratorVisitor.JavaCode javaCode;
+//        public JavaCodeGeneratorVisitor.JavaCode javaCode;
         public boolean precompile = false;
 
         public Program(Path fileName, FluxParser.ProgramContext ctx) {
@@ -139,7 +132,18 @@ public class FluxCompiler {
             if (verbose)
                 System.out.println("Successfully parsed and enriched " + filePath.getFileName());
 
-            JavaCodeGeneratorVisitor generator = new JavaCodeGeneratorVisitor();
+            String irFilename = filePath.getFileName().toString().replace(".flux", ".ir");
+            Path relativePath = originalPath.relativize(filePath);
+
+            Path relativeParent = relativePath.getParent();
+            Path outputDirectory = (relativeParent != null)
+                    ? outputPath.resolve(relativeParent)
+                    : outputPath;
+
+            Files.createDirectories(outputDirectory);
+
+            Path irPath = outputDirectory.resolve(irFilename);
+            var ir = new FluxIr<>(new IrGeneratorVisitor(), irPath.toFile());
 
 //            if (enablePrecompile) {
 //
@@ -174,12 +178,13 @@ public class FluxCompiler {
 
             var fullPackageFileStr = originalPath.relativize(filePath).toString().replace("\\", ".");
 
-            System.out.println(fullPackageFileStr);
             var relativePackageFileStr = !fullPackageFileStr.isEmpty() ? fullPackageFileStr.substring(0, fullPackageFileStr.lastIndexOf(".")) : "";
             var packageName = !relativePackageFileStr.isEmpty() ? relativePackageFileStr.substring(0, relativePackageFileStr.lastIndexOf(".")) : "flux";
-            String generatedJavaCode = "package " + packageName + ";\n" + generator.visit(tree);
 
-            writeGeneratedJavaFile(originalPath, filePath, generatedJavaCode, outputPath);
+            String generatedJavaCode = "package " + packageName + ";\n" + ir.visit(tree);
+
+            String fileName = filePath.getFileName().toString().replace(".flux", ".java");
+            writeGeneratedFile(fileName, originalPath, filePath, generatedJavaCode, outputPath);
 
         } catch (IOException e) {
             System.err.println("Error processing file: " + filePath);
@@ -196,9 +201,9 @@ public class FluxCompiler {
         if (metadata != null && metadata.imports != null) {
             if (tree.children != null) {
                 for (ParseTree child : tree.children) {
-                    if (child instanceof FluxParser.DeclarationContext decl) {
-                        if (decl.importDecl() != null && decl.importDecl().qualifiedId() != null) {
-                            program.imports.add(decl.importDecl().qualifiedId().getText() + (decl.importDecl().wildcard != null ? decl.importDecl().wildcard.getText() : ".*"));
+                    if (child instanceof FluxParser.ImportDeclContext decl) {
+                        if (decl.qualifiedId() != null) {
+                            program.imports.add(decl.qualifiedId().getText() + (decl.wildcard != null ? decl.wildcard.getText() : ".*"));
                         }
                     }
                 }
@@ -220,7 +225,7 @@ public class FluxCompiler {
         var program = programRegistry.get(tree);
 
         FluxParser.DeclarationContext declarationContext = new FluxParser.DeclarationContext(tree, -1);
-        FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(declarationContext, -1);
+        FluxParser.ImportDeclContext syntheticImport = new FluxParser.ImportDeclContext(declarationContext);
 
         syntheticImport.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.T__0, "import ")));
 
@@ -234,15 +239,12 @@ public class FluxCompiler {
         FluxParser.TerminatorContext terminator = new FluxParser.TerminatorContext(declarationContext, -1);
         terminator.addAnyChild(new TerminalNodeImpl(new CommonToken(FluxLexer.TERMINATOR, ";")));
 
-        declarationContext.addAnyChild(syntheticImport);
-        declarationContext.addAnyChild(terminator);
-
         if (tree.children == null) {
-            tree.addAnyChild(declarationContext);
+            tree.addAnyChild(syntheticImport);
         } else {
-            tree.children.addFirst(declarationContext);
+            tree.children.addFirst(syntheticImport);
         }
-        declarationContext.parent = tree;
+        syntheticImport.parent = tree;
 
         program.imports.add(importPath);
 
@@ -339,7 +341,7 @@ public class FluxCompiler {
         return meta;
     }
 
-    private static File writeGeneratedJavaFile(Path originalPath, Path originalFluxPath, String javaSourceCode, Path outputRoot) {
+    private static File writeGeneratedFile(String fileName, Path originalPath, Path originalFluxPath, String javaSourceCode, Path outputRoot) {
         try {
             Path relativePath = originalPath.relativize(originalFluxPath);
 
@@ -350,7 +352,6 @@ public class FluxCompiler {
 
             Files.createDirectories(outputDirectory);
 
-            String fileName = originalFluxPath.getFileName().toString().replace(".flux", ".java");
             Path outputPath = outputDirectory.resolve(fileName);
 
             Files.writeString(outputPath, javaSourceCode);
