@@ -1,7 +1,7 @@
 package net.norivensuu.flux.utils;
 
 import com.thoughtworks.qdox.JavaProjectBuilder;
-import net.norivensuu.flux.FluxParser;
+import net.norivensuu.flux.antlr.FluxParser;
 import one.util.streamex.StreamEx;
 import org.antlr.v4.runtime.tree.ParseTree;
 

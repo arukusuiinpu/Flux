@@ -112,7 +112,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>net.norivensuu.flux.FluxCompiler</mainClass>
+              <mainClass>net.norivensuu.flux.compiler.FluxCompiler</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -131,7 +131,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>net.norivensuu.flux.FluxCompiler</mainClass>
+              <mainClass>net.norivensuu.flux.compiler.FluxCompiler</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
