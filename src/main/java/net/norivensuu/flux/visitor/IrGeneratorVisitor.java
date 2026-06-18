@@ -56,6 +56,6 @@ public class IrGeneratorVisitor extends FluxBaseVisitor<IrNode<String>> implemen
 
     @Override
     public IrNode<String> visitFunctionModifiers(FunctionModifiersContext ctx) {
-        return getIr().of(ctx, (s) -> String.format("modifiers (%s)", ctx.));
+        return getIr().of(ctx, (s) -> String.format("modifiers (%s)", ctx.getText()));
     }
 }

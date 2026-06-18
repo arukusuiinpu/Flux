@@ -83,66 +83,6 @@ public interface FluxVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTerminator(FluxParser.TerminatorContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FluxParser#accessModifier}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitAccessModifier(FluxParser.AccessModifierContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#unfinishedMd}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitUnfinishedMd(FluxParser.UnfinishedMdContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#implementationModifier}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitImplementationModifier(FluxParser.ImplementationModifierContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#staticMd}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStaticMd(FluxParser.StaticMdContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#finalMd}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFinalMd(FluxParser.FinalMdContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#transientMd}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTransientMd(FluxParser.TransientMdContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#volatileMd}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitVolatileMd(FluxParser.VolatileMdContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#synchronizedMd}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitSynchronizedMd(FluxParser.SynchronizedMdContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#nativeMd}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitNativeMd(FluxParser.NativeMdContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FluxParser#strictfpMd}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStrictfpMd(FluxParser.StrictfpMdContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link FluxParser#variableModifiers}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

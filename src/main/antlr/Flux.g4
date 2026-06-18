@@ -54,23 +54,14 @@ type
 
 terminator : TERMINATOR+ ;
 
-implementationModifier : 'abstract' | 'static' | 'native' ;
-staticMd : 'static' ;
-finalMd : 'final' ;
-transientMd : 'transient' ;
-volatileMd : 'volatile' ;
-synchronizedMd : 'synchronized' ;
-nativeMd : 'native' ;
-strictfpMd : 'strictfp' ;
-
 variableModifiers
     :
     accessModifier=('public' | 'protected' | 'private')?
     unfinishedMd=('unfinished' | 'illegal' | 'suboptimal' | 'unpolished' | 'ugly')?
-    staticMd?
-    finalMd?
-    transientMd?
-    volatileMd?
+    staticMd='static'?
+    finalMd='final'?
+    transientMd='transient'?
+    volatileMd='volatile'?
     ;
 
 localVarDecl
@@ -80,15 +71,15 @@ localVarDecl
 
 functionModifiers
     :
-    accessModifier?
-    unfinishedMd?
-    implementationModifier?
-    finalMd?
-    transientMd?
-    volatileMd?
-    synchronizedMd?
-    nativeMd?
-    strictfpMd?
+    accessModifier=('public' | 'protected' | 'private')?
+    unfinishedMd=('unfinished' | 'illegal' | 'suboptimal' | 'unpolished' | 'ugly')?
+    implementationModifier=('abstract' | 'static' | 'native')?
+    finalMd='final'?
+    transientMd='transient'?
+    volatileMd='volatile'?
+    synchronizedMd='synchronized'?
+    nativeMd='native'?
+    strictfpMd='strictfp'?
     ;
 
 annotation

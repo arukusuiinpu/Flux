@@ -77,21 +77,22 @@ public class FluxIr<V> {
                     }
                 }
 
-                for (var child : ctx.children) {
-                    if (!(child instanceof TerminalNodeImpl)) {
-                        if (children == null) {
-                            children = new ArrayList<>();
-                        }
-                        var node = getGenerator().visit(child);
-
-                        if (node != null) {
-                            if (!(node instanceof EmptyIrNode)) {
-                                node.visit();
-                                children.add(node);
+                if (ctx.children != null) {
+                    for (var child : ctx.children) {
+                        if (!(child instanceof TerminalNodeImpl)) {
+                            if (children == null) {
+                                children = new ArrayList<>();
                             }
-                        }
-                        else {
-                            throw new UnimplementedIrNodeException(String.format("Could not construct node from %s, not implemented.", child.getClass().getSimpleName()));
+                            var node = getGenerator().visit(child);
+
+                            if (node != null) {
+                                if (!(node instanceof EmptyIrNode)) {
+                                    node.visit();
+                                    children.add(node);
+                                }
+                            } else {
+                                throw new UnimplementedIrNodeException(String.format("Could not construct node from %s, not implemented.", child.getClass().getSimpleName()));
+                            }
                         }
                     }
                 }
