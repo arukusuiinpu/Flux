@@ -87,4 +87,16 @@ public class IrGeneratorVisitor extends FluxBaseVisitor<IrNode<String, ? extends
     public IrNode<String, ? extends ParserRuleContext> visitExpressionStatement(ExpressionStatementContext ctx) {
         return of(ctx, StatementIrNode.class);
     }
+
+    // BLOCKS
+
+    @Override
+    public IrNode<String, ? extends ParserRuleContext> visitClassBlock(ClassBlockContext ctx) {
+        return of(ctx, "block");
+    }
+
+    @Override
+    public IrNode<String, ? extends ParserRuleContext> visitVoidBlock(VoidBlockContext ctx) {
+        return of(ctx, "block");
+    }
 }
